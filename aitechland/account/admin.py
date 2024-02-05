@@ -1,3 +1,9 @@
 from django.contrib import admin
 
-# Register your models here.
+
+class CustomAdminSite(admin.AdminSite):
+    site_header = 'Administration'
+
+
+# Register the custom admin site
+admin_site = CustomAdminSite(name='customadmin')

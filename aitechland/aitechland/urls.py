@@ -19,8 +19,9 @@ from django.contrib import admin
 from django.urls import path, include
 
 urlpatterns = [
+    path('safety/', include('safety_detection.urls', namespace='safety_detection')),
+    path('account/', include('account.urls')),
     path('admin/', admin.site.urls),
-    path('account/', include('account.urls')),  # Include URLs from the 'account' app
+
     # Add other URL patterns as needed
 ]
-

@@ -1,0 +1,6 @@
+{% extends 'admin/login.html' %}
+
+{% block content %}
+    {{ block.super }}
+    <p><a href="{% url 'login' %}">LOGIN</a></p>
+{% endblock %}
