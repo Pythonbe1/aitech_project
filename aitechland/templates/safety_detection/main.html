@@ -2,10 +2,18 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Success</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Safety Detection System</title>
 </head>
 <body>
-    <h1>Success</h1>
-    <p>Congratulations! You have successfully logged in.</p>
+    <h1>Welcome to Safety Detection System</h1>
+    <div id="camera-feeds">
+        {% for ip_camera_url in ip_camera_urls %}
+            <video controls autoplay class="camera-feed">
+                <source src="{% url 'safety_detection:video_feed' ip_camera_url %}" type="multipart/x-mixed-replace">
+                Your browser does not support the video tag.
+            </video>
+        {% endfor %}
+    </div>
 </body>
 </html>
