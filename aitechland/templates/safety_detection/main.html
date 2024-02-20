@@ -1,37 +1,16 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Safety Detection System</title>
-    <style>
-        .camera-feed-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .camera-feed {
-            width: 100%; /* Adjust the width as needed */
-            height: auto; /* Maintain aspect ratio */
-            margin-bottom: 20px; /* Adjust spacing between the videos */
-        }
-    </style>
-</head>
-<body>
-    <h1>Welcome to Safety Detection System</h1>
-    <div id="camera-feeds">
-        <div class="camera-feed-container">
-            <video controls autoplay class="camera-feed">
-                <source src="{% url 'safety_detection:video_stream' %}?camera_ip={{ ip_camera_urls.0 }}" type="multipart/x-mixed-replace">
-                Your browser does not support the video tag.
-            </video>
-        </div>
-        <div class="camera-feed-container">
-            <video controls autoplay class="camera-feed">
-                <source src="{% url 'safety_detection:video_stream' %}?camera_ip={{ ip_camera_urls.1 }}" type="multipart/x-mixed-replace">
-                Your browser does not support the video tag.
-            </video>
-        </div>
-    </div>
-</body>
+<html>
+  <head>
+    <title>Video Live Stream</title>
+  </head>
+  <body>
+    <!-- Logout button -->
+    <a href="{% url 'login' %}">Logout</a>
+
+    <h1>Video Live Stream</h1>
+
+    <!-- Loop through each camera and generate an img tag -->
+    {% for camera_index in camera_indexes %}
+      <img src="{% url 'safety_detection:video_feed' camera_index=camera_index %}">
+    {% endfor %}
+  </body>
 </html>
