@@ -1,16 +1,71 @@
-<html>
-  <head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Video Live Stream</title>
-  </head>
-  <body>
-    <!-- Logout button -->
-    <a href="{% url 'login' %}">Logout</a>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+        }
 
-    <h1>Video Live Stream</h1>
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-gap: 20px;
+        }
 
-    <!-- Loop through each camera and generate an img tag -->
-    {% for camera_index in camera_indexes %}
-      <img src="{% url 'safety_detection:video_feed' camera_index=camera_index %}">
-    {% endfor %}
-  </body>
+        .logout-btn {
+            text-align: right;
+        }
+
+        .logout-btn a {
+            text-decoration: none;
+            color: #007bff;
+        }
+
+        .camera-stream {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .camera-stream img {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- First Part: Video Streams -->
+    <div class="video-streams">
+        <!-- Loop through each camera and generate an img tag -->
+        {% for camera_index in camera_indexes %}
+            <div class="camera-stream">
+                <img src="{% url 'safety_detection:video_feed' camera_index=camera_index %}">
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Second Part: Other Content -->
+    <div class="other-content">
+        <!-- Logout button -->
+        <div class="logout-btn">
+            <a href="{% url 'login' %}">Logout</a>
+        </div>
+
+        <!-- Additional content can be added here -->
+    </div>
+</div>
+</body>
 </html>

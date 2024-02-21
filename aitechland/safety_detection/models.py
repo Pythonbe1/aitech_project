@@ -13,10 +13,26 @@ class DetectionClasses(models.Model):
         managed = True
 
 
+class CameraCredential(models.Model):
+    credential_name = models.CharField(max_length=256, null=True)
+    camera_login = models.CharField(max_length=256, null=False)
+    camera_password = models.CharField(max_length=256, null=False)
+
+    def __str__(self):
+        return self.credential_name
+
+    class Meta:
+        db_table = 'camera_credential'
+        managed = True
+
+
 class Camera(models.Model):
     detect_names = models.ManyToManyField(DetectionClasses)
     area_name = models.CharField(max_length=256)
     ip_address = models.CharField(max_length=100)
+    rtsp_port = models.IntegerField()
+    channel_id = models.IntegerField()
+    credential_for_ip = models.ForeignKey(CameraCredential, on_delete=models.CASCADE)
 
     def __str__(self):
         return f'{self.area_name} {self.ip_address}'
@@ -24,6 +40,8 @@ class Camera(models.Model):
     class Meta:
         db_table = 'camera'
         managed = False
+
+
 
 
 class Permission(models.Model):
@@ -37,12 +55,3 @@ class Permission(models.Model):
 
     def __str__(self):
         return f'{self.user} {self.camera}'
-
-# class Image(models.Model):
-#     camera = models.ForeignKey(Camera, on_delete=models.CASCADE)
-#     class_name = models.CharField(max_length=100)
-#     image_file = models.ImageField(upload_to='images/')
-#
-#     class Meta:
-#         db_table = 'image'
-#         managed = False

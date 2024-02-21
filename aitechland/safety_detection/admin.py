@@ -1,7 +1,7 @@
 from django.contrib import admin
 
-from .models import Camera, Permission, DetectionClasses
+from .models import Camera, Permission, CameraCredential
 
 admin.site.register(Camera)
 admin.site.register(Permission)
-admin.site.register(DetectionClasses)
+admin.site.register(CameraCredential)
