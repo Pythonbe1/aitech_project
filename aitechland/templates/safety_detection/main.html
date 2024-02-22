@@ -52,7 +52,7 @@
         <!-- Loop through each camera and generate an img tag -->
         {% for camera_index in camera_indexes %}
             <div class="camera-stream">
-                <img src="{% url 'safety_detection:video_feed' camera_index=camera_index %}">
+                <img src="{% url 'safety_detection:video_feed' camera_index=camera_index %}" width="100" height="100">
             </div>
         {% endfor %}
     </div>
@@ -67,5 +67,3 @@
         <!-- Additional content can be added here -->
     </div>
 </div>
-</body>
-</html>

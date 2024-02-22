@@ -36,6 +36,13 @@ def gen(camera, path_weights, detection_function, telegram_message):
                b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n\r\n')
 
 
+def gen_stream(camera):
+    while True:
+        frame = camera.get_frame()
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
+
+
 def video_feed(request, camera_index):
     logged_in_user = request.user
     camera_info = get_camera_info(logged_in_user)
@@ -45,6 +52,10 @@ def video_feed(request, camera_index):
     if camera_index < len(ip_cameras):
         ip_address = ip_cameras[camera_index]
         camera_data = camera_info[ip_address]
+        video_url = (
+            f"rtsp:/{camera_data['camera_login']}:{camera_data['camera_password']}"
+            f"@{ip_address}:{camera_data['rtsp_port']}"
+            f"/Streaming/Channels/{camera_data['channel_id']}")
 
         # Determine the path of weights based on detect_names
         if 'fire' in camera_data['detect_names']:
@@ -52,21 +63,18 @@ def video_feed(request, camera_index):
             # Use FireDetection class for detection
             detection_function = FireDetection.get_fire_detection
             telegram_message = 'FIRE is detected!'
+            video_url = (
+                f"rtsp:/{camera_data['camera_login']}:{camera_data['camera_password']}"
+                f"@{ip_address}:{camera_data['rtsp_port']}"
+                f"/Streaming/Channels/{camera_data['channel_id']}")
         else:
             path_weights = '/home/bekbol/PycharmProjects/ai_techland_safety_detetcion/aitechland/safety_detection/weights/helmet_head_detection.pt'
             # Use HelmetHead class for detection
             detection_function = HelmetHead.get_head_helmet_detection
             telegram_message = 'Not all workers are wearing helmet'
 
-        video_url = (
-            f"rtsp:/{camera_data['camera_login']}:{camera_data['camera_password']}"
-            f"@{ip_address}:{camera_data['rtsp_port']}"
-            f"/Streaming/Channels/{camera_data['channel_id']}")
 
-        return StreamingHttpResponse(gen(VideoCamera(video_url),
-                                         path_weights,
-                                         detection_function,
-                                         telegram_message),
+        return StreamingHttpResponse(gen_stream(VideoCamera(video_url)),
                                      content_type='multipart/x-mixed-replace; boundary=frame')
     else:
         return HttpResponseNotFound('Camera not found')
