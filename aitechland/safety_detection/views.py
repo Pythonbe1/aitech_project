@@ -1,7 +1,9 @@
+import cv2
 from django.http.response import StreamingHttpResponse, HttpResponseNotFound
 from django.shortcuts import render
 
 from safety_detection.models import Permission
+from safety_detection.video_stream.HelmetDetection import HelmetHead
 from safety_detection.video_stream.LiveVideoStream import VideoCamera
 
 
@@ -22,11 +24,14 @@ def get_camera_info(user):
 
 
 # Create generator function for video feed
-def gen(camera):
+def gen(camera, path_weights):
+
     while True:
         frame = camera.get_frame()
+        annotated_frame = HelmetHead.get_head_helmet_detection(path_weights, frame)
+        ret, jpeg = cv2.imencode('.jpg', annotated_frame)
         yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
+               b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n\r\n')
 
 
 # View function for both video feeds
@@ -42,7 +47,12 @@ def video_feed(request, camera_index):
 
         video_url = (f"rtsp:/{camera_data['camera_login']}:{camera_data['camera_password']}@{ip_address}:{camera_data['rtsp_port']}"
                      f"/Streaming/Channels/{camera_data['channel_id']}")
-        return StreamingHttpResponse(gen(VideoCamera(video_url)),
+
+        # Provide the path to YOLO weights file and telegram message
+        path_weights = '/home/bekbol/PycharmProjects/ai_techland_safety_detetcion/aitechland/safety_detection/weights/helmet_head_detection.pt'
+        telegram_message = 'Your custom Telegram message'
+
+        return StreamingHttpResponse(gen(VideoCamera(video_url), path_weights),
                                      content_type='multipart/x-mixed-replace; boundary=frame')
     else:
         return HttpResponseNotFound('Camera not found')

@@ -11,7 +11,6 @@ class VideoCamera(object):
     def get_frame(self):
         success, imgNp = self.url.read()
         resize = cv2.resize(imgNp, (640, 480), interpolation=cv2.INTER_LINEAR)
-        ret, jpeg = cv2.imencode('.jpg', resize)
-        return jpeg.tobytes()
+        return resize
 
 
