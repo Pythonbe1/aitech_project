@@ -1,46 +1,54 @@
 import cv2
+from asgiref.sync import sync_to_async
+from django.core.paginator import Paginator
+from django.http import JsonResponse
 from django.http.response import StreamingHttpResponse, HttpResponseNotFound
 from django.shortcuts import render
 
-from safety_detection.models import Permission
-from safety_detection.alarm_detection.HelmetDetection import HelmetHead
 from safety_detection.alarm_detection.FireDetection import FireDetection
+from safety_detection.alarm_detection.HelmetDetection import HelmetHead
+from safety_detection.models import Permission
 from safety_detection.video_stream.LiveVideoStream import VideoCamera
 
 
-# Fetch camera IPs and additional information once
+def get_camera_ips(request):
+    # Retrieve the user object based on your authentication logic
+    user = request.user
+    camera_info = get_camera_info(user)
+    # Extract IP addresses and area names from camera_info
+    ips_and_areas = [{'ip_address': ip, 'area_name': info['area_name']} for ip, info in camera_info.items()]
+    return JsonResponse({'camera_info': ips_and_areas})
+
+
 def get_camera_info(user):
     camera_info = {}
     permissions = Permission.objects.filter(user_id=user.id)
     for permission in permissions:
         camera = permission.camera
-        camera_credential = camera.credential_for_ip  # Get the associated CameraCredential
-        detect_names = list(camera.detect_names.values_list('name', flat=True))  # Fetch detect_names
+        camera_credential = camera.credential_for_ip
+        detect_names = list(camera.detect_names.values_list('name', flat=True))
+        # Retrieve the area name associated with the camera
+        area_name = camera.area_name if camera.area_name else None
         camera_info[camera.ip_address] = {
             'rtsp_port': camera.rtsp_port,
             'channel_id': camera.channel_id,
-            'camera_login': camera_credential.camera_login,  # Retrieve camera_login from CameraCredential
-            'camera_password': camera_credential.camera_password,  # Retrieve camera_password from CameraCredential
-            'detect_names': detect_names  # Include detect_names in the dictionary
+            'camera_login': camera_credential.camera_login,
+            'camera_password': camera_credential.camera_password,
+            'detect_names': detect_names,
+            'area_name': area_name,  # Include the area name in the dictionary
         }
     return camera_info
 
 
-# Create generator function for video feed
-def gen(camera, path_weights, detection_function, telegram_message):
-    while True:
-        frame = camera.get_frame()
-        annotated_frame = detection_function(path_weights, frame, telegram_message=telegram_message)
-        ret, jpeg = cv2.imencode('.jpg', annotated_frame)
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n\r\n')
+def index(request):
+    camera_info = get_camera_info(request.user)
+    camera_indexes = list(range(len(camera_info)))
 
+    paginator = Paginator(camera_indexes, 2)  # Assuming you want 2 camera indexes per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
 
-def gen_stream(camera):
-    while True:
-        frame = camera.get_frame()
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
+    return render(request, 'safety_detection/main.html', {'page_obj': page_obj})
 
 
 def video_feed(request, camera_index):
@@ -73,14 +81,7 @@ def video_feed(request, camera_index):
             detection_function = HelmetHead.get_head_helmet_detection
             telegram_message = 'Not all workers are wearing helmet'
 
-
-        return StreamingHttpResponse(gen_stream(VideoCamera(video_url)),
+        return StreamingHttpResponse(VideoCamera.gen_stream(VideoCamera(video_url)),
                                      content_type='multipart/x-mixed-replace; boundary=frame')
     else:
         return HttpResponseNotFound('Camera not found')
-
-
-def index(request):
-    camera_info = get_camera_info(request.user)
-    camera_indexes = range(len(camera_info))
-    return render(request, 'safety_detection/main.html', {'camera_indexes': camera_indexes})
