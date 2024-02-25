@@ -1,7 +1,4 @@
-import cv2
-from asgiref.sync import sync_to_async
 from django.core.paginator import Paginator
-from django.http import JsonResponse
 from django.http.response import StreamingHttpResponse, HttpResponseNotFound
 from django.shortcuts import render
 
@@ -9,15 +6,6 @@ from safety_detection.alarm_detection.FireDetection import FireDetection
 from safety_detection.alarm_detection.HelmetDetection import HelmetHead
 from safety_detection.models import Permission
 from safety_detection.video_stream.LiveVideoStream import VideoCamera
-
-
-def get_camera_ips(request):
-    # Retrieve the user object based on your authentication logic
-    user = request.user
-    camera_info = get_camera_info(user)
-    # Extract IP addresses and area names from camera_info
-    ips_and_areas = [{'ip_address': ip, 'area_name': info['area_name']} for ip, info in camera_info.items()]
-    return JsonResponse({'camera_info': ips_and_areas})
 
 
 def get_camera_info(user):

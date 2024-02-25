@@ -115,7 +115,7 @@
             position: fixed;
             top: 0;
             left: -220px; /* Move it off-screen initially */
-            width: 200px;
+            width: 220px;
             height: 100%;
             background-color: #fff;
             border-radius: 0 8px 8px 0;
@@ -145,7 +145,27 @@
         }
 
         .sidebar-heading {
-            margin-bottom: 50px; /* Adjust this value as needed */
+            margin-bottom: 70px; /* Adjust this value as needed */
+        }
+
+        /* Adjust the width of the filter dropdowns */
+        #cameraIP, #detectionClass, #fromDate, #toDate {
+            width: calc(100% - 40px); /* Set the width to 100% of the parent container minus padding */
+            padding: 10px; /* Add padding */
+            box-sizing: border-box; /* Ensure padding is included in width calculation */
+        }
+
+        /* Style for the Apply button */
+        #applyButton {
+            background-color: #007bff; /* Match the filter button color */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            cursor: pointer;
+            margin-top: 10px;
+            margin-right: 20px; /* Add margin to separate from the filter button */
+            float: right; /* Float to the left side */
         }
     </style>
 </head>
@@ -165,31 +185,38 @@
 
 <!-- Filter Button and Sidebar Container -->
 <div class="filter-btn-container" id="filterButtonContainer">
-    <button class="filter-btn" id="filterButton" onclick="toggleFilterSidebar()"></button>
+    <button class="filter-btn" id="filterButton" onclick="toggleFilterSidebar()">Filter</button>
 
     <!-- Filter Sidebar -->
     <div class="filter-sidebar" id="filterSidebar">
         <h3 class="sidebar-heading"></h3>
         <div>
             <label for="fromDate">From:</label>
+            <br>
             <input type="date" id="fromDate">
         </div>
         <div style="margin-top: 10px;">
             <label for="toDate">To:</label>
+            <br>
             <input type="date" id="toDate">
         </div>
         <div style="margin-top: 10px;">
             <label for="cameraIP">Camera IP:</label>
-            <input type="text" id="cameraIP" autocomplete="off">
-            <div id="cameraIPList" class="autocomplete-items"></div>
+            <select id="cameraIP" autocomplete="off" >
+                <option value="">Select IP</option>
+            </select>
         </div>
 
         <div style="margin-top: 10px;">
             <label for="detectionClass">Detection Class:</label>
-            <input type="text" id="detectionClass">
+            <br>
+            <select id="detectionClass" autocomplete="off">
+                <option value="">Select class</option>
+            </select>
+
         </div>
         <br> <!-- Add a line break here -->
-        <button onclick="applyFilter()" style="margin-top: 10px;">Apply</button>
+        <button id="applyButton" onclick="applyFilter()">Apply</button>
     </div>
 </div>
 
@@ -205,14 +232,7 @@
     </div>
 
     <!-- Second Part: Other Content -->
-{#    <div class="other-content">#}
-{#        <!-- Logout button -->#}
-{#        <div class="logout-btn">#}
-{#            <a href="{% url 'login' %}">Logout</a>#}
-{#        </div>#}
-
-        <!-- Additional content can be added here -->
-    </div>
+    <!-- Additional content can be added here -->
 </div>
 
 <!-- Pagination links -->
@@ -243,69 +263,45 @@
         buttonContainer.classList.toggle("sidebar-open");
     }
 
-    // Function to get camera IPs
-    function getCameraIPs() {
-    console.log("Fetching camera IPs...");
-    fetch("{% url 'safety_detection:get_camera_ips' %}")
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log("Received data:", data);
-            var cameraIPInput = document.getElementById("cameraIP");
-            if (cameraIPInput) {
-                console.log("Found camera IP input:", cameraIPInput);
-                // Clear previous options
-                cameraIPInput.innerHTML = '';
-                // Iterate over camera info to populate options
-                data.camera_info.forEach(item => {
-                    var option = document.createElement('option');
-                    option.value = item.ip_address;
-                    option.textContent = item.ip_address + ' - ' + item.area_name;
-                    cameraIPInput.appendChild(option);
+    // Function to fetch camera IPs and populate the dropdown
+    function fetchCameraIPs() {
+        fetch("{% url 'filters:get_camera_ips' %}")
+            .then(response => response.json())
+            .then(data => {
+                const cameraIPDropdown = document.getElementById('cameraIP');
+                cameraIPDropdown.innerHTML = ''; // Clear previous options
+                data.camera_info.forEach(camera => {
+                    const option = document.createElement('option');
+                    option.value = camera.ip_address;
+                    option.text = `${camera.ip_address} (${camera.area_name})`;
+                    cameraIPDropdown.appendChild(option);
                 });
-            } else {
-                console.error("Camera IP input element not found.");
-            }
+            })
+            .catch(error => console.error('Error fetching camera IPs:', error));
+    }
+
+    // Function to fetch detection class names and populate the input field
+    function fetchDetectionClassNames() {
+    fetch("{% url 'filters:get_class_names' %}")
+        .then(response => response.json())
+        .then(data => {
+            const detectionClassDropdown = document.getElementById('detectionClass');
+            detectionClassDropdown.innerHTML = ''; // Clear previous options
+            data.class_names.forEach(className => {
+                const option = document.createElement('option');
+                option.value = className;
+                option.text = className;
+                detectionClassDropdown.appendChild(option);
+            });
         })
-        .catch(error => console.error('Error fetching camera IPs:', error));
+        .catch(error => console.error('Error fetching detection class names:', error));
 }
 
-    // Function to apply filter
-    function applyFilter() {
-    var fromDate = document.getElementById("fromDate").value;
-    var toDate = document.getElementById("toDate").value;
-    var cameraIPDropdown = document.getElementById("cameraIP");
-    var cameraIP = cameraIPDropdown.options[cameraIPDropdown.selectedIndex].value;
-    var detectionClass = document.getElementById("detectionClass").value;
-
-    // Your existing filter logic here
-
-    // Check if sidebar exists before removing the class
-    var sidebar = document.getElementById("filterSidebar");
-    if (sidebar) {
-        sidebar.classList.remove("sidebar-open");
-    } else {
-        console.error("Sidebar element not found.");
-    }
-
-    // Check if buttonContainer exists before removing the class
-    var buttonContainer = document.getElementById("filterButtonContainer");
-    if (buttonContainer) {
-        buttonContainer.classList.remove("sidebar-open");
-    } else {
-        console.error("Button container element not found.");
-    }
-}
-
-
-    // Call getCameraIPs when the page loads
-    window.onload = function() {
-        getCameraIPs();
-    };
+// Call the function to fetch detection class names when the page loads
+window.onload = function () {
+    fetchCameraIPs();
+    fetchDetectionClassNames();
+};
 </script>
 
 

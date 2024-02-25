@@ -42,8 +42,6 @@ class Camera(models.Model):
         managed = False
 
 
-
-
 class Permission(models.Model):
     user = models.ForeignKey(AuthUser, on_delete=models.CASCADE)
     camera = models.ForeignKey(Camera, on_delete=models.CASCADE)
