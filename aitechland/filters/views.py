@@ -49,11 +49,12 @@ def get_class_names(request):
 
 
 def get_filtered_data(request):
-    # Retrieve filter parameters from the request
+
     fromDate = request.GET.get('fromDate')
     toDate = request.GET.get('toDate')
     cameraIP = request.GET.get('cameraIP').split(',')
     detectionClass = request.GET.get('detectionClass')
-    # video_feed_url = reverse('safety_detection:index', kwargs={'camera_ip': cameraIP})
-
-    return redirect('safety_detection:index', {'cameraIP': cameraIP})
+    return redirect('safety_detection:index', {'cameraIP': cameraIP,
+                                               'toDate': toDate,
+                                               'fromDate': fromDate,
+                                               'detectionClass': detectionClass})

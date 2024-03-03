@@ -373,7 +373,8 @@
                 <td>{{ image.alarm }}</td>
                 <td>{{ image.date }}</td>
                 <td>{{ image.time }}</td>
-                <td><a href="#" onclick="openModal('{{ image.image_link }}'); return false;">View Image</a></td>
+                <td><a href="#" onclick="openModal('{{ image.image_link }}'); return false;">alarm image</a></td>
+
             </tr>
         {% endfor %}
     </tbody>
@@ -403,7 +404,12 @@
     </span>
 </div>
 
-<!-- Display image data in a table format -->
+<!-- Modal for displaying images -->
+
+<div id="imageModal" class="modal">
+  <img class="modal-content" id="modalImage">
+  <span class="close" onclick="closeModal()">&times;</span>
+</div>
 
 
 <script>
