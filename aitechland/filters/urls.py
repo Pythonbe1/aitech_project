@@ -7,4 +7,6 @@ urlpatterns = [
     path('get-camera-ips/', views.get_camera_ips, name='get_camera_ips'),
     path('get-detect-names/', views.get_class_names, name='get_class_names'),
     path('get-filtered-data/', views.get_filtered_data, name='get_filtered_data'),
+    path('get-filtered-data-alarm/', views.get_filtered_data_alarm, name='get_filtered_data_alarm'),
+
 ]

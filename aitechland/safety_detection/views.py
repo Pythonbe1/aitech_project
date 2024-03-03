@@ -1,7 +1,9 @@
 import ast
+from datetime import datetime
 
 from django.conf import settings
 from django.core.paginator import Paginator
+from django.db.models import Q
 from django.http.response import StreamingHttpResponse, HttpResponseNotFound, JsonResponse
 from django.shortcuts import render
 
@@ -86,10 +88,30 @@ def alarm_show(request, camera_ip):
 
 def alarm_index(request, filter_param=None):
     permissions = Permission.objects.filter(user_id=request.user.id)
-    camera_ids = []
-    for permission in permissions:
-        camera_ids.append(permission.camera.id)
-    images = Image.objects.filter(camera_id__in=camera_ids)
+    camera_ids = [permission.camera.id for permission in permissions]
+
+    if filter_param:
+        filter_param = ast.literal_eval(filter_param)
+
+        camera_ip = filter_param.get('cameraIP')
+        from_date = filter_param.get('fromDate')
+        to_date = filter_param.get('toDate')
+        detection_class = filter_param.get('detectionClass')
+
+        filters = Q()
+        if camera_ip:
+            filters &= Q(camera__ip_address__in=camera_ip)
+        if from_date:
+            filters &= Q(create_date__gte=datetime.strptime(from_date, '%Y-%m-%d'))
+        if to_date:
+            filters &= Q(create_date__lte=datetime.strptime(to_date, '%Y-%m-%d'))
+        if detection_class:
+            filters &= Q(class_name__name=detection_class)
+
+        images = Image.objects.filter(filters)
+    else:
+        images = Image.objects.filter(camera_id__in=camera_ids)
+
     image_data = []
     for image in images:
         image_dict = {
@@ -103,7 +125,7 @@ def alarm_index(request, filter_param=None):
         }
         image_data.append(image_dict)
 
-    paginator = Paginator(image_data, 20)  # Assuming you want 2 camera IPs per page
+    paginator = Paginator(image_data, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 

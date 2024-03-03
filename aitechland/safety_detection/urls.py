@@ -10,6 +10,7 @@ urlpatterns = [
     path('alarm_show/<str:camera_ip>/', views.alarm_show, name='alarm_show'),
     path('', views.index, name='index'),
     path('alarm_index/', views.alarm_index, name='alarm_index'),
+    path('alarm_index/<str:filter_param>', views.alarm_index, name='alarm_index'),
 
 ]
 

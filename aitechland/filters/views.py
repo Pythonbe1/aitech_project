@@ -49,12 +49,26 @@ def get_class_names(request):
 
 
 def get_filtered_data(request):
-
     fromDate = request.GET.get('fromDate')
     toDate = request.GET.get('toDate')
-    cameraIP = request.GET.get('cameraIP').split(',')
+    cameraIP = request.GET.get('cameraIP')
+    if cameraIP:
+        cameraIP = cameraIP.split(',')
     detectionClass = request.GET.get('detectionClass')
     return redirect('safety_detection:index', {'cameraIP': cameraIP,
                                                'toDate': toDate,
                                                'fromDate': fromDate,
                                                'detectionClass': detectionClass})
+
+
+def get_filtered_data_alarm(request):
+    fromDate = request.GET.get('fromDate')
+    toDate = request.GET.get('toDate')
+    cameraIP = request.GET.get('cameraIP')
+    if cameraIP:
+        cameraIP = cameraIP.split(',')
+    detectionClass = request.GET.get('detectionClass')
+    return redirect('safety_detection:alarm_index', filter_param={'cameraIP': cameraIP,
+                                                                  'toDate': toDate,
+                                                                  'fromDate': fromDate,
+                                                                  'detectionClass': detectionClass})
