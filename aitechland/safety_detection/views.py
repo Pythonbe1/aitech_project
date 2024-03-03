@@ -1,12 +1,11 @@
-from django.core.paginator import Paginator
-from django.http.response import StreamingHttpResponse, HttpResponseNotFound
-from django.shortcuts import render
 import ast
 
-from filters.views import get_filtered_data
-from safety_detection.alarm_detection.FireDetection import FireDetection
-from safety_detection.alarm_detection.HelmetDetection import HelmetHead
-from safety_detection.models import Permission
+from django.conf import settings
+from django.core.paginator import Paginator
+from django.http.response import StreamingHttpResponse, HttpResponseNotFound, JsonResponse
+from django.shortcuts import render
+
+from safety_detection.models import Permission, Image
 from safety_detection.video_stream.LiveVideoStream import VideoCamera
 
 
@@ -35,12 +34,11 @@ def get_camera_info(user):
 
 def index(request, camera_ip=None):
     camera_info = get_camera_info(request.user)
-
     if camera_ip:  # Filter camera IPs if camera_ip is provided
         camera_ip = ast.literal_eval(camera_ip)
         camera_info = {ip: camera_info[ip] for ip in camera_ip['cameraIP'] if ip in camera_info}
-
     camera_ips = list(camera_info.keys())
+
     paginator = Paginator(camera_ips, 2)  # Assuming you want 2 camera IPs per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -63,3 +61,51 @@ def video_feed(request, camera_ip):
                                      content_type='multipart/x-mixed-replace; boundary=frame')
     else:
         return HttpResponseNotFound('Camera not found')
+
+
+def alarm_show(request, camera_ip):
+    # Filter Image instances based on the camera_ip, ordered by creation date descending
+    images = Image.objects.filter(camera__ip_address=camera_ip).order_by('-create_date', '-create_time')[:9]
+
+    # Constructing the list of dictionaries with related values
+    image_data = []
+    for image in images:
+        image_dict = {
+            'object': image.camera.area_name,
+            'camera_ip': image.camera.ip_address,
+            'alarm': image.class_name.name,
+            'date': image.create_date,
+            'time': image.create_time,
+            # Use the image filename directly as the link
+            'image_link': settings.MEDIA_URL + image.image_file
+        }
+        image_data.append(image_dict)
+    # Convert list of dictionaries to JSON and return as response
+    return JsonResponse(image_data, safe=False)
+
+
+def alarm_index(request, filter_param=None):
+    permissions = Permission.objects.filter(user_id=request.user.id)
+    camera_ids = []
+    for permission in permissions:
+        camera_ids.append(permission.camera.id)
+    images = Image.objects.filter(camera_id__in=camera_ids)
+    image_data = []
+    for image in images:
+        image_dict = {
+            'object': image.camera.area_name,
+            'camera_ip': image.camera.ip_address,
+            'alarm': image.class_name.name,
+            'date': image.create_date,
+            'time': image.create_time,
+            # Use the image filename directly as the link
+            'image_link': settings.MEDIA_URL + image.image_file
+        }
+        image_data.append(image_dict)
+
+    paginator = Paginator(image_data, 20)  # Assuming you want 2 camera IPs per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'safety_detection/alarm.html',
+                  {'page_obj': page_obj, 'image_data': image_data})

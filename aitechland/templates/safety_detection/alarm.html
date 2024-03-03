@@ -79,17 +79,18 @@
         }
 
         .container {
-            max-width: 1200px;
-            margin: 20px auto;
-            padding: 20px;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-gap: 20px;
-            position: relative;
-        }
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-gap: 20px;
+    position: relative;
+    margin-left: 40px; /* Add this line to move the container 40px to the left */
+}
 
         .logout-btn {
             text-align: right;
@@ -242,15 +243,15 @@
     </style>
     <style>
         .data-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
+    width: 100%;
+    border-collapse: collapse;
+    margin-left: 100px; /* Add this line to move the table 40px to the left */
+}
         .data-table th, .data-table td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
 
         .data-table th {
             background-color: #f2f2f2;
@@ -351,25 +352,35 @@
     </div>
 </div>
 
-<div class="container">
-    <!-- First Part: Video Streams -->
-    <div class="video-streams">
-        <!-- Loop through each camera and generate an img tag -->
-        {% for ip_address in page_obj %}
-            <div class="camera-stream-container">
-                <!-- Place the camera stream on the left -->
-                <div class="camera-stream" data-camera-ip="{{ ip_address }}">
-                    <img src="{% url 'safety_detection:video_feed' camera_ip=ip_address %}" width="100" height="100">
-                </div>
-                <!-- Place the JSON data container on the right -->
-                <div class="alarm-data" data-camera-ip="{{ ip_address }}">
-                    <!-- Display JSON data as a table -->
-              
-                </div>
-            </div>
+
+
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>Object</th>
+            <th>Camera IP</th>
+            <th>Alarm</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Image Link</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for image in page_obj %}
+            <tr>
+                <td>{{ image.object }}</td>
+                <td>{{ image.camera_ip }}</td>
+                <td>{{ image.alarm }}</td>
+                <td>{{ image.date }}</td>
+                <td>{{ image.time }}</td>
+                <td><a href="#" onclick="openModal('{{ image.image_link }}'); return false;">View Image</a></td>
+            </tr>
         {% endfor %}
-    </div>
-</div>
+    </tbody>
+</table>
+
+
+
 
 
 
@@ -392,70 +403,10 @@
     </span>
 </div>
 
-<!-- Modal for displaying images -->
+<!-- Display image data in a table format -->
 
-<div id="imageModal" class="modal">
-  <img class="modal-content" id="modalImage">
-  <span class="close" onclick="closeModal()">&times;</span>
-</div>
 
 <script>
-    // Function to fetch and display JSON data for a given camera IP
-    function fetchAndDisplayData(cameraIP) {
-        if (!cameraIP) {
-            console.error('Camera IP is null or invalid');
-            return;
-        }
-        
-        fetch(`/safety_detection/alarm_show/${cameraIP}/`)
-            .then(response => response.json())
-            .then(data => {
-                // Construct HTML to display JSON data as a table
-                let html = `<table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Object</th>
-                                        <th>Camera IP</th>
-                                        <th>Alarm</th>
-                                        <th>Date</th>
-                                        <th>Time</th>
-                                        <th>Image Link</th>
-                                    </tr>
-                                </thead>
-                                <tbody>`;
-                data.forEach(item => {
-                    html += `<tr>
-                                <td>${item.object}</td>
-                                <td>${item.camera_ip}</td>
-                                <td>${item.alarm}</td>
-                                <td>${item.date}</td>
-                                <td>${item.time}</td>
-                                <td><a href="#" onclick="openModal('${item.image_link}'); return false;">View Image</a></td>
-                             </tr>`;
-                });
-                html += `</tbody></table>`;
-
-                // Display JSON data in the corresponding alarm data container
-                const alarmDataDiv = document.querySelector(`.alarm-data[data-camera-ip="${cameraIP}"]`);
-                if (alarmDataDiv) {
-                    alarmDataDiv.innerHTML = html;
-                } else {
-                    console.error(`Alarm data container not found for camera IP: ${cameraIP}`);
-                }
-            })
-            .catch(error => console.error('Error fetching JSON data:', error));
-    }
-
-    // Fetch and display JSON data for each camera IP
-    document.addEventListener('DOMContentLoaded', () => {
-        const cameraStreamDivs = document.querySelectorAll('.camera-stream');
-        cameraStreamDivs.forEach(div => {
-            const cameraIP = div.getAttribute('data-camera-ip');
-            if (cameraIP) {
-                fetchAndDisplayData(cameraIP);
-            }
-        });
-    });
 
 // Open modal and display clicked image
 function openModal(imageSrc) {

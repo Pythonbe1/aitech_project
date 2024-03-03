@@ -53,3 +53,18 @@ class Permission(models.Model):
 
     def __str__(self):
         return f'{self.user} {self.camera}'
+
+
+class Image(models.Model):
+    camera = models.ForeignKey(Camera, on_delete=models.CASCADE)
+    class_name = models.ForeignKey(DetectionClasses, on_delete=models.CASCADE)
+    image_file = models.CharField(max_length=100)
+    create_date = models.DateField(auto_now_add=True)  # Separate field for date
+    create_time = models.TimeField(auto_now_add=True)  # Separate field for time
+
+    def __str__(self):
+        return f'Image for {self.camera} - Class: {self.class_name}'
+
+    class Meta:
+        db_table = 'image'
+        managed = True
