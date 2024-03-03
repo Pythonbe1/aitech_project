@@ -78,18 +78,36 @@
             margin: 0 10px;
         }
 
-        .container {
+.container {
     max-width: 1200px;
     margin: 20px auto;
     padding: 20px;
     background-color: #fff;
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-gap: 20px;
+    display: flex;
+    justify-content: space-between; /* Align items horizontally */
     position: relative;
-    margin-left: 40px; /* Add this line to move the container 40px to the left */
+}
+
+.export-container {
+    padding: 10px;
+    background-color: #f2f2f2;
+    border-radius: 8px;
+}
+
+.export-btn {
+    color: #007bff;
+    text-decoration: none;
+    padding: 8px 16px;
+    border-radius: 5px;
+    border: 1px solid #007bff;
+    transition: background-color 0.3s;
+}
+
+.export-btn:hover {
+    background-color: #007bff;
+    color: #fff;
 }
 
         .logout-btn {
@@ -353,7 +371,7 @@
 </div>
 
 
-
+<div class="container">
 <table class="data-table">
     <thead>
         <tr>
@@ -379,7 +397,11 @@
         {% endfor %}
     </tbody>
 </table>
+  <div style="text-align: right; margin-top: 10px;">
+        <a href="{% url 'safety_detection:alarm_index_export' %}" class="export-btn">Export</a>
+    </div>
 
+</div>
 
 
 

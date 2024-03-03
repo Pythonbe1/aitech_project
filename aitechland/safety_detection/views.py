@@ -1,9 +1,12 @@
 import ast
 from datetime import datetime
+from io import BytesIO
 
+import openpyxl
 from django.conf import settings
 from django.core.paginator import Paginator
 from django.db.models import Q
+from django.http import HttpResponse
 from django.http.response import StreamingHttpResponse, HttpResponseNotFound, JsonResponse
 from django.shortcuts import render
 
@@ -131,3 +134,62 @@ def alarm_index(request, filter_param=None):
 
     return render(request, 'safety_detection/alarm.html',
                   {'page_obj': page_obj, 'image_data': image_data})
+
+
+def alarm_index_export(request, filter_param=None):
+    permissions = Permission.objects.filter(user_id=request.user.id)
+    camera_ids = [permission.camera.id for permission in permissions]
+
+    if filter_param:
+        filter_param = ast.literal_eval(filter_param)
+
+        camera_ip = filter_param.get('cameraIP')
+        from_date = filter_param.get('fromDate')
+        to_date = filter_param.get('toDate')
+        detection_class = filter_param.get('detectionClass')
+
+        filters = Q()
+        if camera_ip:
+            filters &= Q(camera__ip_address__in=camera_ip)
+        if from_date:
+            filters &= Q(create_date__gte=datetime.strptime(from_date, '%Y-%m-%d'))
+        if to_date:
+            filters &= Q(create_date__lte=datetime.strptime(to_date, '%Y-%m-%d'))
+        if detection_class:
+            filters &= Q(class_name__name=detection_class)
+
+        images = Image.objects.filter(filters)
+    else:
+        images = Image.objects.filter(camera_id__in=camera_ids)
+
+    image_data = []
+    for image in images:
+        image_dict = {
+            'object': image.camera.area_name,
+            'camera_ip': image.camera.ip_address,
+            'alarm': image.class_name.name,
+            'date': image.create_date,
+            'time': image.create_time,
+            # Use the image filename directly as the link
+            'image_link': settings.MEDIA_URL + image.image_file
+        }
+        image_data.append(image_dict)
+
+    # Create an Excel workbook and add data to it
+    workbook = openpyxl.Workbook()
+    worksheet = workbook.active
+    worksheet.append(['Object', 'Camera IP', 'Alarm', 'Date', 'Time', 'Image Link'])
+    for item in image_data:
+        worksheet.append(
+            [item['object'], item['camera_ip'], item['alarm'], item['date'], item['time'], item['image_link']])
+
+    # Save the workbook to a BytesIO buffer
+    excel_buffer = BytesIO()
+    workbook.save(excel_buffer)
+
+    # Create an HttpResponse with the Excel file as an attachment
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename=alarm_data.xlsx'
+    response.write(excel_buffer.getvalue())
+
+    return response

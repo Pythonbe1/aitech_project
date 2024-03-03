@@ -11,6 +11,6 @@ urlpatterns = [
     path('', views.index, name='index'),
     path('alarm_index/', views.alarm_index, name='alarm_index'),
     path('alarm_index/<str:filter_param>', views.alarm_index, name='alarm_index'),
+    path('alarm_index_export/', views.alarm_index_export, name='alarm_index_export'),
 
 ]
-
