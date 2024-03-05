@@ -518,7 +518,7 @@ function closeModal() {
         var detectionClass = document.getElementById("detectionClass").value;
 
         // Construct the URL for redirection
-        var filteredURL = "{% url 'filters:get_filtered_data' %}?fromDate=" + fromDate + "&toDate=" + toDate;
+        var filteredURL = "{% url 'filters:get_filtered_data_processed' %}?fromDate=" + fromDate + "&toDate=" + toDate;
 
         // Add selected camera IPs to the URL if any are selected
         if (cameraIPs && cameraIPs.length > 0) {

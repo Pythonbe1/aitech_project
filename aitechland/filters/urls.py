@@ -8,5 +8,6 @@ urlpatterns = [
     path('get-detect-names/', views.get_class_names, name='get_class_names'),
     path('get-filtered-data/', views.get_filtered_data, name='get_filtered_data'),
     path('get-filtered-data-alarm/', views.get_filtered_data_alarm, name='get_filtered_data_alarm'),
+    path('get_filtered_data_processed/', views.get_filtered_data_processed, name='get_filtered_data_processed'),
 
 ]

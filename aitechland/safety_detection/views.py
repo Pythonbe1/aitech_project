@@ -234,15 +234,21 @@ def alarm_index_export(request, filter_param=None):
     return response
 
 
-def processed_index(request, camera_ip=None):
+def processed_index(request, filter_param=None):
     camera_info = get_camera_info(request.user)
-
-    if camera_ip:  # Filter camera IPs if camera_ip is provided
-        camera_ip = ast.literal_eval(camera_ip)
-        camera_info = {ip: camera_info[ip] for ip in camera_ip['cameraIP'] if ip in camera_info}
-
     camera_ips = list(camera_info.keys())
-    first_camera_ip = camera_ips[0] if camera_ips else None  # Get the first IP address, or None if list is empty
+
+    if filter_param:
+        filter_param = ast.literal_eval(filter_param)
+
+        camera_ip = filter_param.get('cameraIP')[0]
+        from_date = filter_param.get('fromDate')
+        to_date = filter_param.get('toDate')
+        detection_class = filter_param.get('detectionClass')
+        # camera_info = {ip: camera_info[ip] for ip in camera_ip['cameraIP'] if ip in camera_info}
+    else:
+
+        camera_ip = camera_ips[0] if camera_ips else None  # Get the first IP address, or None if list is empty
 
     return render(request, 'safety_detection/processed.html',
-                  {'first_camera_ip': first_camera_ip, 'camera_info': camera_info})
+                  {'first_camera_ip': camera_ip})
