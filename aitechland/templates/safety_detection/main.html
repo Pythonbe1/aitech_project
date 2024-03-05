@@ -304,7 +304,7 @@
         <a class="navbar-brand" href="#">AI TechLand</a>
         <a href="{% url 'safety_detection:index' %}">Live</a>
         <a href="{% url 'safety_detection:alarm_index' %}">Alarm</a>
-        <a href="#">Processed</a>
+       <a href="{% url 'safety_detection:processed_index' %}">Processed</a>
         <a href="#">Analytics</a>
     </div>
     <div>
@@ -547,7 +547,7 @@ function closeModal() {
 
         // Add detection class if selected
         if (detectionClass) {
-            filteredURL += "&detectionClass=" + detectionClass;
+            filteredURL += "&detectionClass=" + detectionClass;  
         }
 
         // Redirect the user to the filtered URL

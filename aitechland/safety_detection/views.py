@@ -10,6 +10,8 @@ from django.http import HttpResponse
 from django.http.response import StreamingHttpResponse, HttpResponseNotFound, JsonResponse
 from django.shortcuts import render
 
+from safety_detection.alarm_detection.FireDetection import FireDetection
+from safety_detection.alarm_detection.HelmetDetection import HelmetHead
 from safety_detection.models import Permission, Image
 from safety_detection.video_stream.LiveVideoStream import VideoCamera
 
@@ -64,6 +66,43 @@ def video_feed(request, camera_ip):
 
         return StreamingHttpResponse(VideoCamera.gen_stream(VideoCamera(video_url)),
                                      content_type='multipart/x-mixed-replace; boundary=frame')
+    else:
+        return HttpResponseNotFound('Camera not found')
+
+
+def video_feed_gen(request, camera_ip):
+    logged_in_user = request.user
+    camera_info = get_camera_info(logged_in_user)
+
+    if camera_ip in camera_info:
+        camera_data = camera_info[camera_ip]
+
+        video_url = (
+            f"rtsp:/{camera_data['camera_login']}:{camera_data['camera_password']}"
+            f"@{camera_ip}:{camera_data['rtsp_port']}"
+            f"/cam/realmonitor?channel={camera_data['channel_id']}&subtype=0&unicast=true&proto=Onvif")
+
+        if 'fire' in camera_data['detect_names']:
+            path_weights = '/home/bekbol/PycharmProjects/ai_techland_safety_detetcion/aitechland/safety_detection/weights/fire_detection.pt'
+            # Use FireDetection class for detection
+            detection_function = FireDetection.get_fire_detection
+            telegram_message = 'FIRE is detected!'
+            video_url = (
+                f"rtsp:/{camera_data['camera_login']}:{camera_data['camera_password']}"
+                f"@{camera_ip}:{camera_data['rtsp_port']}"
+                f"/Streaming/Channels/{camera_data['channel_id']}")
+        else:
+            path_weights = '/home/bekbol/PycharmProjects/ai_techland_safety_detetcion/aitechland/safety_detection/weights/helmet_head_detection.pt'
+            # Use HelmetHead class for detection
+            detection_function = HelmetHead.get_head_helmet_detection
+            telegram_message = 'Not all workers are wearing helmet'
+
+        return StreamingHttpResponse(VideoCamera.gen(VideoCamera(video_url),
+                                                     path_weights,
+                                                     detection_function,
+                                                     telegram_message=telegram_message),
+                                     content_type='multipart/x-mixed-replace; boundary=frame')
+
     else:
         return HttpResponseNotFound('Camera not found')
 
@@ -193,3 +232,17 @@ def alarm_index_export(request, filter_param=None):
     response.write(excel_buffer.getvalue())
 
     return response
+
+
+def processed_index(request, camera_ip=None):
+    camera_info = get_camera_info(request.user)
+
+    if camera_ip:  # Filter camera IPs if camera_ip is provided
+        camera_ip = ast.literal_eval(camera_ip)
+        camera_info = {ip: camera_info[ip] for ip in camera_ip['cameraIP'] if ip in camera_info}
+
+    camera_ips = list(camera_info.keys())
+    first_camera_ip = camera_ips[0] if camera_ips else None  # Get the first IP address, or None if list is empty
+
+    return render(request, 'safety_detection/processed.html',
+                  {'first_camera_ip': first_camera_ip, 'camera_info': camera_info})

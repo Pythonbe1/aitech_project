@@ -38,9 +38,10 @@
 .modal-content {
     margin: auto;
     display: block;
-    width: 80%; /* Adjust the width as needed */
-    max-width: 800px; /* Limit maximum width */
+    /* width: 80%; Remove this line */
+    /* max-width: 800px; Remove this line */
     max-height: 80%; /* Limit maximum height */
+    max-width: 90%; /* Adjust the maximum width */
 }
 
 /* Close button */
@@ -78,37 +79,18 @@
             margin: 0 10px;
         }
 
-.container {
-    max-width: 1200px;
-    margin: 20px auto;
-    padding: 20px;
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    display: flex;
-    justify-content: space-between; /* Align items horizontally */
-    position: relative;
-}
-
-.export-container {
-    padding: 10px;
-    background-color: #f2f2f2;
-    border-radius: 8px;
-}
-
-.export-btn {
-    color: #007bff;
-    text-decoration: none;
-    padding: 8px 16px;
-    border-radius: 5px;
-    border: 1px solid #007bff;
-    transition: background-color 0.3s;
-}
-
-.export-btn:hover {
-    background-color: #007bff;
-    color: #fff;
-}
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-gap: 20px;
+            position: relative;
+        }
 
         .logout-btn {
             text-align: right;
@@ -261,15 +243,15 @@
     </style>
     <style>
         .data-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-left: 100px; /* Add this line to move the table 40px to the left */
-}
+            width: 100%;
+            border-collapse: collapse;
+        }
+
         .data-table th, .data-table td {
-    border: 1px solid #ddd;
-    padding: 8px;
-    text-align: left;
-}
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
 
         .data-table th {
             background-color: #f2f2f2;
@@ -370,61 +352,26 @@
     </div>
 </div>
 
-
 <div class="container">
-<table class="data-table">
-    <thead>
-        <tr>
-            <th>Object</th>
-            <th>Camera IP</th>
-            <th>Alarm</th>
-            <th>Date</th>
-            <th>Time</th>
-            <th>Image Link</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for image in page_obj %}
-            <tr>
-                <td>{{ image.object }}</td>
-                <td>{{ image.camera_ip }}</td>
-                <td>{{ image.alarm }}</td>
-                <td>{{ image.date }}</td>
-                <td>{{ image.time }}</td>
-                <td><a href="#" onclick="openModal('{{ image.image_link }}'); return false;">alarm image</a></td>
-
-            </tr>
-        {% endfor %}
-    </tbody>
-</table>
-  <div style="text-align: right; margin-top: 10px;">
-        <a href="{% url 'safety_detection:alarm_index_export' %}" class="export-btn">Export</a>
+    <!-- First Part: Video Streams -->
+    <div class="video-streams">
+        <!-- Single camera stream and its data -->
+        <div class="camera-stream-container">
+            <!-- Place the camera stream on the left -->
+            <div class="camera-stream" data-camera-ip="{{ first_camera_ip }}">
+                <img src="{% url 'safety_detection:video_feed_gen' camera_ip=first_camera_ip %}" width="100" height="100">
+            </div>
+            <!-- Place the JSON data container on the right -->
+            <div class="alarm-data" data-camera-ip="{{ first_camera_ip }}">
+                <!-- Display JSON data as a table -->
+                <!-- JSON data display code -->
+            </div>
+        </div>
     </div>
-
 </div>
 
 
 
-
-
-<!-- Pagination links -->
-<div class="pagination">
-    <span class="step-links">
-        {% if page_obj.has_previous %}
-            <a href="?page=1">&laquo; first</a>
-            <a href="?page={{ page_obj.previous_page_number }}">previous</a>
-        {% endif %}
-
-        <span class="current">
-            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
-        </span>
-
-        {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}">next</a>
-            <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
-        {% endif %}
-    </span>
-</div>
 
 <!-- Modal for displaying images -->
 
@@ -433,8 +380,63 @@
   <span class="close" onclick="closeModal()">&times;</span>
 </div>
 
-
 <script>
+    // Function to fetch and display JSON data for a given camera IP
+    function fetchAndDisplayData(cameraIP) {
+        if (!cameraIP) {
+            console.error('Camera IP is null or invalid');
+            return;
+        }
+        
+        fetch(`/safety_detection/alarm_show/${cameraIP}/`)
+            .then(response => response.json())
+            .then(data => {
+                // Construct HTML to display JSON data as a table
+                let html = `<table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Object</th>
+                                        <th>Camera IP</th>
+                                        <th>Alarm</th>
+                                        <th>Date</th>
+                                        <th>Time</th>
+                                        <th>Image Link</th>
+                                    </tr>
+                                </thead>
+                                <tbody>`;
+                data.forEach(item => {
+                    html += `<tr>
+                                <td>${item.object}</td>
+                                <td>${item.camera_ip}</td>
+                                <td>${item.alarm}</td>
+                                <td>${item.date}</td>
+                                <td>${item.time}</td>
+                                <td><a href="#" onclick="openModal('${item.image_link}'); return false;">View Image</a></td>
+                             </tr>`;
+                });
+                html += `</tbody></table>`;
+
+                // Display JSON data in the corresponding alarm data container
+                const alarmDataDiv = document.querySelector(`.alarm-data[data-camera-ip="${cameraIP}"]`);
+                if (alarmDataDiv) {
+                    alarmDataDiv.innerHTML = html;
+                } else {
+                    console.error(`Alarm data container not found for camera IP: ${cameraIP}`);
+                }
+            })
+            .catch(error => console.error('Error fetching JSON data:', error));
+    }
+
+    // Fetch and display JSON data for each camera IP
+    document.addEventListener('DOMContentLoaded', () => {
+        const cameraStreamDivs = document.querySelectorAll('.camera-stream');
+        cameraStreamDivs.forEach(div => {
+            const cameraIP = div.getAttribute('data-camera-ip');
+            if (cameraIP) {
+                fetchAndDisplayData(cameraIP);
+            }
+        });
+    });
 
 // Open modal and display clicked image
 function openModal(imageSrc) {
@@ -516,7 +518,7 @@ function closeModal() {
         var detectionClass = document.getElementById("detectionClass").value;
 
         // Construct the URL for redirection
-        var filteredURL = "{% url 'filters:get_filtered_data_alarm' %}?fromDate=" + fromDate + "&toDate=" + toDate;
+        var filteredURL = "{% url 'filters:get_filtered_data' %}?fromDate=" + fromDate + "&toDate=" + toDate;
 
         // Add selected camera IPs to the URL if any are selected
         if (cameraIPs && cameraIPs.length > 0) {

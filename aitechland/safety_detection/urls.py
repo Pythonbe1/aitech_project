@@ -12,5 +12,8 @@ urlpatterns = [
     path('alarm_index/', views.alarm_index, name='alarm_index'),
     path('alarm_index/<str:filter_param>', views.alarm_index, name='alarm_index'),
     path('alarm_index_export/', views.alarm_index_export, name='alarm_index_export'),
+    path('index_processed/', views.processed_index, name='processed_index'),  # Add this line
+    path('index_processed/<str:filter_param>', views.processed_index, name='processed_index'),  # Add this line
+    path('video_feed_gen/<str:camera_ip>/', views.video_feed_gen, name='video_feed_gen'),
 
 ]

@@ -14,10 +14,16 @@ class VideoCamera(object):
         ret, jpeg = cv2.imencode('.jpg', resize)
         return jpeg.tobytes()
 
+    def get_frame_gen(self):
+        success, imgNp = self.url.read()
+        resize = cv2.resize(imgNp, (640, 480), interpolation=cv2.INTER_LINEAR)
+        ret, jpeg = cv2.imencode('.jpg', resize)
+        return resize
+
     @staticmethod
     def gen(camera, path_weights, detection_function, telegram_message):
         while True:
-            frame = camera.get_frame()
+            frame = camera.get_frame_gen()
             annotated_frame = detection_function(path_weights, frame, telegram_message=telegram_message)
             ret, jpeg = cv2.imencode('.jpg', annotated_frame)
             yield (b'--frame\r\n'
