@@ -20,12 +20,14 @@ from django.urls import path, include
 
 from django.conf import settings
 from django.conf.urls.static import static
+from account.views import LoginView
 
 urlpatterns = [
                   path('safety_detection/', include('safety_detection.urls', namespace='safety_detection')),
                   path('account/', include('account.urls')),
                   path('admin/', admin.site.urls),
                   path('filters/', include('filters.urls', namespace='filters')),
+                  path('', LoginView.as_view(), name='login'),
 
                   # Add other URL patterns as needed
               ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

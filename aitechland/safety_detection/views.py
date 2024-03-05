@@ -16,6 +16,7 @@ from safety_detection.models import Permission, Image
 from safety_detection.video_stream.LiveVideoStream import VideoCamera
 
 
+
 def get_camera_info(user):
     camera_info = {}
     permissions = Permission.objects.filter(user_id=user.id)
@@ -63,6 +64,7 @@ def video_feed(request, camera_ip):
             f"rtsp:/{camera_data['camera_login']}:{camera_data['camera_password']}"
             f"@{camera_ip}:{camera_data['rtsp_port']}"
             f"/cam/realmonitor?channel={camera_data['channel_id']}&subtype=0&unicast=true&proto=Onvif")
+        print(video_url)
 
         return StreamingHttpResponse(VideoCamera.gen_stream(VideoCamera(video_url)),
                                      content_type='multipart/x-mixed-replace; boundary=frame')
