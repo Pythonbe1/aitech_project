@@ -42,8 +42,6 @@ class Camera(models.Model):
         managed = False
 
 
-
-
 class Permission(models.Model):
     user = models.ForeignKey(AuthUser, on_delete=models.CASCADE)
     camera = models.ForeignKey(Camera, on_delete=models.CASCADE)
@@ -55,3 +53,30 @@ class Permission(models.Model):
 
     def __str__(self):
         return f'{self.user} {self.camera}'
+
+
+class Image(models.Model):
+    camera = models.ForeignKey(Camera, on_delete=models.CASCADE)
+    class_name = models.ForeignKey(DetectionClasses, on_delete=models.CASCADE)
+    image_file = models.CharField(max_length=100)
+    create_date = models.DateField(auto_now_add=True)  # Separate field for date
+    create_time = models.TimeField(auto_now_add=True)  # Separate field for time
+
+    def __str__(self):
+        return f'Image for {self.camera} - Class: {self.class_name}'
+
+    class Meta:
+        db_table = 'image'
+        managed = True
+
+
+class CameraState(models.Model):
+    id = models.AutoField(primary_key=True)
+    camera_ip = models.CharField(max_length=100, unique=True)  # Assuming camera_ip is unique
+    state = models.CharField(max_length=100, default='Online')
+    create_date = models.DateField(auto_now_add=True)
+    create_time = models.TimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'camera_state'
+        managed = True
