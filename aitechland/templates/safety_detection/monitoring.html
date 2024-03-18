@@ -259,6 +259,16 @@
             flex: 1; /* Allow the JSON data container to grow and fill the remaining space */
         }
     </style>
+
+<style>
+        /* Your existing CSS styles */
+        
+        /* Add styles for offline and online states */
+        .offline { background-color: red; width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+        .online { background-color: green; width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    </style>
+
+
     <style>
         .data-table {
     width: 100%;
@@ -332,75 +342,34 @@
 </div>
 
 
-<!-- Multi-select input -->
-
-
-<!-- Filter Button and Sidebar Container -->
-<div class="filter-btn-container" id="filterButtonContainer">
-    <button class="filter-btn" id="filterButton" onclick="toggleFilterSidebar()">Filter</button>
-
-    <!-- Filter Sidebar -->
-    <div class="filter-sidebar" id="filterSidebar">
-        <h3 class="sidebar-heading"></h3>
-        <div>
-            <label for="fromDate">From:</label>
-            <br>
-            <input type="date" id="fromDate">
-        </div>
-        <div style="margin-top: 10px;">
-            <label for="toDate">To:</label>
-            <br>
-            <input type="date" id="toDate">
-        </div>
-        <div style="margin-top: 10px;">
-        <label for="cameraIP">Camera IP:</label>
-        <select id="cameraIP" autocomplete="off" multiple>
-            <option value="">Select IP</option>
-        </select>
-         </div>
-
-        <div style="margin-top: 10px;">
-            <label for="detectionClass">Detection Class:</label>
-            <br>
-            <select id="detectionClass" autocomplete="off">
-                <option value="">Select class</option>
-            </select>
-        </div>
-        <br> <!-- Add a line break here -->
-        <button id="applyButton" onclick="applyFilter()">Apply</button>
-    </div>
-</div>
 
 
 <div class="container">
 <table class="data-table">
     <thead>
         <tr>
-            <th>Object</th>
             <th>Camera IP</th>
-            <th>Alarm</th>
-            <th>Date</th>
-            <th>Time</th>
-            <th>Image Link</th>
+            <th>Area</th>
+            <th>State</th>
+            <th>Sync Date</th> 
+            <th>Sync Time</th> 
         </tr>
     </thead>
     <tbody>
         {% for image in page_obj %}
             <tr>
-                <td>{{ image.object }}</td>
                 <td>{{ image.camera_ip }}</td>
-                <td>{{ image.alarm }}</td>
+                <td>{{ image.area_name }}</td>
+                <td>{% if image.state == 'Offline' %}<span class="offline"></span>{% else %}<span class="online"></span>{% endif %} {{ image.state }}</td>  
                 <td>{{ image.date }}</td>
                 <td>{{ image.time }}</td>
-                <td><a href="#" onclick="openModal('{{ image.image_link }}'); return false;">alarm image</a></td>
+            
 
             </tr>
         {% endfor %}
     </tbody>
 </table>
-  <div style="text-align: right; margin-top: 10px;">
-        <a href="{% url 'safety_detection:alarm_index_export' %}" class="export-btn">Export</a>
-    </div>
+
 
 </div>
 
@@ -427,118 +396,7 @@
     </span>
 </div>
 
-<!-- Modal for displaying images -->
 
-<div id="imageModal" class="modal">
-  <img class="modal-content" id="modalImage">
-  <span class="close" onclick="closeModal()">&times;</span>
-</div>
-
-
-<script>
-
-// Open modal and display clicked image
-function openModal(imageSrc) {
-    var modal = document.getElementById('imageModal');
-    var modalImg = document.getElementById("modalImage");
-    modal.style.display = "block";
-    modalImg.src = imageSrc;
-
-    // Show close button
-    var closeButton = document.querySelector('.close');
-    closeButton.style.display = "block";
-}
-
-// Close modal
-function closeModal() {
-    var modal = document.getElementById('imageModal');
-    modal.style.display = "none";
-
-    // Hide close button
-    var closeButton = document.querySelector('.close');
-    closeButton.style.display = "none";
-}
-</script>
-
-<script>
-    // Fetch camera IPs and populate the dropdown
-    function fetchCameraIPs() {
-        fetch("{% url 'filters:get_camera_ips' %}")
-            .then(response => response.json())
-            .then(data => {
-                const cameraIPDropdown = document.getElementById('cameraIP');
-                cameraIPDropdown.innerHTML = ''; // Clear previous options
-                data.camera_info.forEach(camera => {
-                    const option = document.createElement('option');
-                    option.value = camera.ip_address;
-                    option.text = `${camera.ip_address} (${camera.area_name})`;
-                    cameraIPDropdown.appendChild(option);
-                });
-                
-                // Initialize select2 after populating options
-                $('#cameraIP').select2({
-                    placeholder: "Select IP",
-                    allowClear: true // Optional: Add a clear button
-                });
-            })
-            .catch(error => console.error('Error fetching camera IPs:', error));
-    }
-
-    // Fetch detection class names and populate the input field
-    function fetchDetectionClassNames() {
-        fetch("{% url 'filters:get_class_names' %}")
-            .then(response => response.json())
-            .then(data => {
-                const detectionClassDropdown = document.getElementById('detectionClass');
-                detectionClassDropdown.innerHTML = ''; // Clear previous options
-                data.class_names.forEach(className => {
-                    const option = document.createElement('option');
-                    option.value = className;
-                    option.text = className;
-                    detectionClassDropdown.appendChild(option);
-                });
-            })
-            .catch(error => console.error('Error fetching detection class names:', error));
-    }
-
-    // Function to toggle filter sidebar
-    function toggleFilterSidebar() {
-        var sidebar = document.getElementById("filterSidebar");
-        var buttonContainer = document.getElementById("filterButtonContainer");
-        sidebar.classList.toggle("sidebar-open");
-        buttonContainer.classList.toggle("sidebar-open");
-    }
-
-    // Function to apply filter
-    function applyFilter() {
-        var fromDate = document.getElementById("fromDate").value;
-        var toDate = document.getElementById("toDate").value;
-        var cameraIPs = $('#cameraIP').val(); // Get multiple selected values
-        var detectionClass = document.getElementById("detectionClass").value;
-
-        // Construct the URL for redirection
-        var filteredURL = "{% url 'filters:get_filtered_data_alarm' %}?fromDate=" + fromDate + "&toDate=" + toDate;
-
-        // Add selected camera IPs to the URL if any are selected
-        if (cameraIPs && cameraIPs.length > 0) {
-            filteredURL += "&cameraIP=" + encodeURIComponent(cameraIPs.join(","));
-        }
-
-        // Add detection class if selected
-        if (detectionClass) {
-            filteredURL += "&detectionClass=" + detectionClass;
-        }
-
-        // Redirect the user to the filtered URL
-        window.location.href = filteredURL;
-    }
-
-    // Call functions to fetch data when the page loads
-    window.onload = function () {
-        fetchCameraIPs();
-        fetchDetectionClassNames();
-    };
-</script>
 
 </body>
 </html>

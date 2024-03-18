@@ -15,5 +15,6 @@ urlpatterns = [
     path('index_processed/', views.processed_index, name='processed_index'),  # Add this line
     path('index_processed/<str:filter_param>', views.processed_index, name='processed_index'),  # Add this line
     path('video_feed_gen/<str:camera_ip>/', views.video_feed_gen, name='video_feed_gen'),
+    path('monitoring_index/', views.monitoring_index, name='monitoring_index')
 
 ]

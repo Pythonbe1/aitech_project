@@ -6,15 +6,15 @@ import openpyxl
 from django.conf import settings
 from django.core.paginator import Paginator
 from django.db.models import Q
+from django.db.models import F
 from django.http import HttpResponse
 from django.http.response import StreamingHttpResponse, HttpResponseNotFound, JsonResponse
 from django.shortcuts import render
 
 from safety_detection.alarm_detection.FireDetection import FireDetection
 from safety_detection.alarm_detection.HelmetDetection import HelmetHead
-from safety_detection.models import Permission, Image
+from safety_detection.models import Permission, Image, CameraState, Camera
 from safety_detection.video_stream.LiveVideoStream import VideoCamera
-
 
 
 def get_camera_info(user):
@@ -64,7 +64,6 @@ def video_feed(request, camera_ip):
             f"rtsp:/{camera_data['camera_login']}:{camera_data['camera_password']}"
             f"@{camera_ip}:{camera_data['rtsp_port']}"
             f"/cam/realmonitor?channel={camera_data['channel_id']}&subtype=0&unicast=true&proto=Onvif")
-        print(video_url)
 
         return StreamingHttpResponse(VideoCamera.gen_stream(VideoCamera(video_url)),
                                      content_type='multipart/x-mixed-replace; boundary=frame')
@@ -254,3 +253,39 @@ def processed_index(request, filter_param=None):
 
     return render(request, 'safety_detection/processed.html',
                   {'first_camera_ip': camera_ip})
+
+
+def monitoring_index(request):
+    logged_in_user = request.user
+    camera_info = get_camera_info(logged_in_user)
+    camera_ips = list(camera_info.keys())
+
+    # Retrieve CameraState objects for the camera IPs
+    camera_states = CameraState.objects.filter(camera_ip__in=camera_ips)
+
+    # Get area names for each camera_ip
+    area_name_dict = {}
+    for camera_ip in camera_ips:
+        try:
+            camera = Camera.objects.get(ip_address=camera_ip)
+            area_name_dict[camera_ip] = camera.area_name
+        except Camera.DoesNotExist:
+            area_name_dict[camera_ip] = 'Unknown'
+
+    data = []
+    for state in camera_states:
+        area_name = area_name_dict.get(state.camera_ip, 'Unknown')  # Default to 'Unknown' if no match found
+        image_dict = {
+            'camera_ip': state.camera_ip,
+            'state': state.state,
+            'date': state.create_date,
+            'time': state.create_time,
+            'area_name': area_name
+        }
+        data.append(image_dict)
+
+    paginator = Paginator(data, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'safety_detection/monitoring.html', {'page_obj': page_obj, 'camera_states': data})
