@@ -28,7 +28,8 @@ ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
     '[::1]',
-    '172.17.0.1',  # Add this line
+    '172.17.0.1',
+    '192.168.10.220',
 ]
 
 # Application definition
@@ -117,8 +118,6 @@ USE_TZ = True
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
@@ -132,5 +131,3 @@ STATICFILES_DIRS = [
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # settings.py
-
-
