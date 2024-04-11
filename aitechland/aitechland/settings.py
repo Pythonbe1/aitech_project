@@ -118,6 +118,11 @@ USE_TZ = True
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+weights_folder = os.path.join(BASE_DIR, 'safety_detection', 'weights')
+file_name = 'best version 14.pt'
+# Construct the absolute path to the file
+NEURAL_PATH = os.path.join(weights_folder, file_name)
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 

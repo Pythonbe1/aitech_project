@@ -83,23 +83,33 @@ def video_feed_gen(request, camera_ip):
             f"@{camera_ip}:{camera_data['rtsp_port']}"
             f"/cam/realmonitor?channel={camera_data['channel_id']}&subtype=0&unicast=true&proto=Onvif")
 
-        if 'fire' in camera_data['detect_names']:
-            path_weights = '/home/bekbol/PycharmProjects/ai_techland_safety_detetcion/aitechland/safety_detection/weights/fire_detection.pt'
-            # Use FireDetection class for detection
-            detection_function = FireDetection.get_fire_detection
-            telegram_message = 'FIRE is detected!'
-            video_url = (
-                f"rtsp:/{camera_data['camera_login']}:{camera_data['camera_password']}"
-                f"@{camera_ip}:{camera_data['rtsp_port']}"
-                f"/Streaming/Channels/{camera_data['channel_id']}")
-        else:
-            path_weights = '/home/bekbol/PycharmProjects/ai_techland_safety_detetcion/aitechland/safety_detection/weights/helmet_head_detection.pt'
-            # Use HelmetHead class for detection
-            detection_function = HelmetHead.get_head_helmet_detection
-            telegram_message = 'Not all workers are wearing helmet'
+
+
+
+        detection_function = FireDetection.get_fire_detection
+        telegram_message = 'Alarm detected'
+        c=camera_data
+        a=camera_data['detect_names']
+
+
+        #
+        # if 'fire' in camera_data['detect_names']:
+        #     path_weights = '/home/bekbol/PycharmProjects/ai_techland_safety_detetcion/aitechland/safety_detection/weights/fire_detection.pt'
+        #     # Use FireDetection class for detection
+        #     detection_function = FireDetection.get_fire_detection
+        #     telegram_message = 'FIRE is detected!'
+        #     video_url = (
+        #         f"rtsp:/{camera_data['camera_login']}:{camera_data['camera_password']}"
+        #         f"@{camera_ip}:{camera_data['rtsp_port']}"
+        #         f"/Streaming/Channels/{camera_data['channel_id']}")
+        # else:
+        #     path_weights = '/home/bekbol/PycharmProjects/ai_techland_safety_detetcion/aitechland/safety_detection/weights/helmet_head_detection.pt'
+        #     # Use HelmetHead class for detection
+        #     detection_function = HelmetHead.get_head_helmet_detection
+        #     telegram_message = 'Not all workers are wearing helmet'
 
         return StreamingHttpResponse(VideoCamera.gen(VideoCamera(video_url),
-                                                     path_weights,
+                                                     settings.NEURAL_PATH,
                                                      detection_function,
                                                      telegram_message=telegram_message),
                                      content_type='multipart/x-mixed-replace; boundary=frame')
