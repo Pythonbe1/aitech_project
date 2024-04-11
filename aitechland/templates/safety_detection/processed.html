@@ -295,6 +295,8 @@
         .close:hover {
             color: #aaaaaa;
         }
+        
+        
     </style>
 </head>
 <body>
@@ -336,7 +338,7 @@
         </div>
         <div style="margin-top: 10px;">
         <label for="cameraIP">Camera IP:</label>
-        <select id="cameraIP" autocomplete="off" multiple>
+        <select id="cameraIP" autocomplete="off">
             <option value="">Select IP</option>
         </select>
          </div>
@@ -513,27 +515,28 @@ function closeModal() {
 
     // Function to apply filter
     function applyFilter() {
-        var fromDate = document.getElementById("fromDate").value;
-        var toDate = document.getElementById("toDate").value;
-        var cameraIPs = $('#cameraIP').val(); // Get multiple selected values
-        var detectionClass = document.getElementById("detectionClass").value;
+    var fromDate = document.getElementById("fromDate").value;
+    var toDate = document.getElementById("toDate").value;
+    var cameraIP = document.getElementById("cameraIP").value; // Get the selected value
 
-        // Construct the URL for redirection
-        var filteredURL = "{% url 'filters:get_filtered_data_processed' %}?fromDate=" + fromDate + "&toDate=" + toDate;
+    var detectionClass = document.getElementById("detectionClass").value;
 
-        // Add selected camera IPs to the URL if any are selected
-        if (cameraIPs && cameraIPs.length > 0) {
-            filteredURL += "&cameraIP=" + encodeURIComponent(cameraIPs.join(","));
-        }
+    // Construct the URL for redirection
+    var filteredURL = "{% url 'filters:get_filtered_data_processed' %}?fromDate=" + fromDate + "&toDate=" + toDate;
 
-        // Add detection class if selected
-        if (detectionClass) {
-            filteredURL += "&detectionClass=" + detectionClass;
-        }
-
-        // Redirect the user to the filtered URL
-        window.location.href = filteredURL;
+    // Add selected camera IP to the URL if any is selected
+    if (cameraIP) {
+        filteredURL += "&cameraIP=" + encodeURIComponent(cameraIP);
     }
+
+    // Add detection class if selected
+    if (detectionClass) {
+        filteredURL += "&detectionClass=" + detectionClass;
+    }
+
+    // Redirect the user to the filtered URL
+    window.location.href = filteredURL;
+}
 
     // Call functions to fetch data when the page loads
     window.onload = function () {
