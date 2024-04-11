@@ -21,10 +21,11 @@ class VideoCamera(object):
         return resize
 
     @staticmethod
-    def gen(camera, path_weights, detection_function, telegram_message):
+    def gen(camera, path_weights, detection_function):
         while True:
             frame = camera.get_frame_gen()
-            annotated_frame = detection_function(path_weights, frame, telegram_message=telegram_message)
+            annotated_frame = detection_function(path_weights,
+                                                 frame)
             ret, jpeg = cv2.imencode('.jpg', annotated_frame)
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n\r\n')
@@ -35,4 +36,3 @@ class VideoCamera(object):
             frame = camera.get_frame()
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
-
