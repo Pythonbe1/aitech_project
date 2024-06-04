@@ -1,8 +1,6 @@
 from django.http import JsonResponse
-
-from safety_detection.models import Permission
 from django.shortcuts import redirect
-import ast
+from safety_detection.models import Permission
 
 
 def get_camera_info(user):
@@ -72,16 +70,3 @@ def get_filtered_data_alarm(request):
                                                                   'toDate': toDate,
                                                                   'fromDate': fromDate,
                                                                   'detectionClass': detectionClass})
-
-
-def get_filtered_data_processed(request):
-    fromDate = request.GET.get('fromDate')
-    toDate = request.GET.get('toDate')
-    cameraIP = request.GET.get('cameraIP')
-    if cameraIP:
-        cameraIP = cameraIP.split(',')
-    detectionClass = request.GET.get('detectionClass')
-    return redirect('safety_detection:processed_index', filter_param={'cameraIP': cameraIP,
-                                                         'toDate': toDate,
-                                                         'fromDate': fromDate,
-                                                         'detectionClass': detectionClass})
