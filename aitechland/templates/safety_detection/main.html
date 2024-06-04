@@ -1,566 +1,566 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}AI TechLand{% endblock %}</title>    
-    
-
-
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script> 
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
-
-    
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-            margin: 0;
-            padding: 0;
-            overflow-x: hidden; /* Prevent horizontal scrollbars */
-        }
-        
-        .modal {
-    display: none;
-    position: fixed;
-    z-index: 1000; /* Ensure it's above other content */
-    padding-top: 50px; /* Center the modal vertically */
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0, 0, 0, 0.8); /* Semi-transparent background */
-}
-
-/* Modal content */
-.modal-content {
-    margin: auto;
-    display: block;
-    /* width: 80%; Remove this line */
-    /* max-width: 800px; Remove this line */
-    max-height: 80%; /* Limit maximum height */
-    max-width: 90%; /* Adjust the maximum width */
-}
-
-/* Close button */
-.close {
-    position: absolute;
-    top: 10px;
-    right: 25px;
-    color: #ffffff;
-    font-size: 35px;
-    font-weight: bold;
-    transition: 0.3s;
-}
-
-.close:hover,
-.close:focus {
-    color: #aaaaaa;
-    text-decoration: none;
-    cursor: pointer;
-}
-
-        .menu-bar {
-            background-color: #333;
-            color: white;
-            padding: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: relative; /* Ensure the menu bar stays above other content */
-            z-index: 1003; /* Ensure the menu bar is above the filter sidebar */
-        }
-
-        .menu-bar a {
-            color: white;
-            text-decoration: none;
-            margin: 0 10px;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 20px auto;
-            padding: 20px;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-gap: 20px;
-            position: relative;
-        }
-
-        .logout-btn {
-            text-align: right;
-        }
-
-        .logout-btn a {
-            text-decoration: none;
-            color: #007bff;
-        }
-
-        .camera-stream {
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        .camera-stream img {
-            display: block;
-            width: 100%;
-            height: auto;
-        }
-
-        .pagination {
-            margin-top: 20px;
-            text-align: center;
-        }
-
-        .pagination a {
-            color: #007bff;
-            text-decoration: none;
-            padding: 8px 16px;
-            transition: background-color 0.3s;
-            border: 1px solid #007bff;
-            border-radius: 5px;
-            background-color: #fff; /* Change background color */
-        }
-
-        .pagination a:hover {
-            background-color: #007bff;
-            color: #fff;
-        }
-
-        .pagination .current {
-            background-color: #007bff;
-            color: #fff;
-            padding: 8px 16px;
-            border-radius: 5px;
-        }
-
-        /* Filter Button */
-        .filter-btn-container {
-            position: fixed;
-            top: 40px; /* Adjust the value to move it down by 10px */
-            left: 20px;
-            z-index: 1001; /* Ensure it's above other content */
-            transition: left 0.3s ease-in-out;
-        }
-
-        .filter-btn {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 10px 20px;
-            cursor: pointer;
-            position: relative;
-            z-index: 1002; /* Ensure it's above the sidebar */
-        }
-
-        /* Filter Sidebar */
-        .filter-sidebar {
-            position: fixed;
-            top: 0;
-            left: -220px; /* Move it off-screen initially */
-            width: 220px;
-            height: 100%;
-            background-color: #fff;
-            border-radius: 0 8px 8px 0;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-            z-index: 1000; /* Ensure it's above other content */
-            transition: left 0.3s ease-in-out;
-        }
-
-        /* Show Sidebar */
-        .sidebar-open {
-            left: 0;
-        }
-
-        /* Filter Popup */
-        .filter-popup {
-            display: none;
-        }
-
-        /* Adjusting Filter Button Text Position */
-        .filter-btn::after {
-            content: "Filter";
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-
-        .sidebar-heading {
-            margin-bottom: 70px; /* Adjust this value as needed */
-        }
-
-        /* Adjust the width of the filter dropdowns */
-        #cameraIP, #detectionClass, #fromDate, #toDate {
-            width: calc(100% - 40px); /* Set the width to 100% of the parent container minus padding */
-            padding: 10px; /* Add padding */
-            box-sizing: border-box; /* Ensure padding is included in width calculation */
-        }
-
-        /* Style for the Apply button */
-        #applyButton {
-            background-color: #007bff; /* Match the filter button color */
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 8px 16px;
-            cursor: pointer;
-            margin-top: 10px;
-            margin-right: 20px; /* Add margin to separate from the filter button */
-            float: right; /* Float to the left side */
-        }
-        
-        .camera-stream-container {
-            display: flex;
-            align-items: center; /* Align items vertically */
-        }
-
-        /* Style for the streaming video */
-        .camera-stream {
-            border-radius: 8px;
-            overflow: hidden;
-            flex: 0 0 auto; /* Allow shrinking and growing, but don't let it grow beyond its initial size */
-            margin-right: 10px; /* Add margin to separate from the JSON data container */
-        }
-
-        .camera-stream img {
-            display: block;
-            width: 100%;
-            height: auto;
-        }
-
-        /* Style for the JSON data container */
-        .alarm-data {
-            flex: 1; /* Allow the JSON data container to grow and fill the remaining space */
-        }
-    </style>
-    <style>
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .data-table th, .data-table td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-
-        .data-table th {
-            background-color: #f2f2f2;
-        }
-
-        .data-table tbody tr:nth-child(even) {
-            background-color: #f2f2f2;
-        }
-
-        .data-table tbody tr:hover {
-            background-color: #ddd;
-        }
-       /* Close button */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000; /* Ensure it's above other content */
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.8); /* Semi-transparent background */
-            overflow: auto;
-        }
-        
-        /* Close button */
-        .close {
-            position: absolute;
-            top: 50%;
-            right: 10px;
-            color: #ffffff;
-            font-size: 35px;
-            font-weight: bold;
-            transition: 0.3s;
-            transform: translateY(-50%); /* Vertically center the close button */
-            cursor: pointer;
-            z-index: 1001; /* Ensure it's above the image */
-        }
-        
-        /* Close button hover effect */
-        .close:hover {
-            color: #aaaaaa;
-        }
-    </style>
-</head>
-<body>
-<!-- Menu bar -->
-<div class="menu-bar">
-    <div>
-        <a class="navbar-brand" href="#">AI TechLand</a>
-        <a href="{% url 'safety_detection:index' %}">Live</a>
-        <a href="{% url 'safety_detection:alarm_index' %}">Alarm</a>
-        <a href="{% url 'safety_detection:processed_index' %}">Processed</a>
-        <a href="{% url 'safety_detection:monitoring_index' %}">Monitoring</a>
-        <a href="#">Analytics</a>
-    </div>
-    <div>
-        <a href="{% url 'login' %}">Logout</a>
-    </div>
-</div>
-
-
-<!-- Multi-select input -->
-
-
-<!-- Filter Button and Sidebar Container -->
-<div class="filter-btn-container" id="filterButtonContainer">
-    <button class="filter-btn" id="filterButton" onclick="toggleFilterSidebar()">Filter</button>
-
-    <!-- Filter Sidebar -->
-    <div class="filter-sidebar" id="filterSidebar">
-        <h3 class="sidebar-heading"></h3>
-        <div>
-            <label for="fromDate">From:</label>
-            <br>
-            <input type="date" id="fromDate">
-        </div>
-        <div style="margin-top: 10px;">
-            <label for="toDate">To:</label>
-            <br>
-            <input type="date" id="toDate">
-        </div>
-        <div style="margin-top: 10px;">
-        <label for="cameraIP">Camera IP:</label>
-        <select id="cameraIP" autocomplete="off" multiple>
-            <option value="">Select IP</option>
-        </select>
-         </div>
-
-        <div style="margin-top: 10px;">
-            <label for="detectionClass">Detection Class:</label>
-            <br>
-            <select id="detectionClass" autocomplete="off">
-                <option value="">Select class</option>
-            </select>
-        </div>
-        <br> <!-- Add a line break here -->
-        <button id="applyButton" onclick="applyFilter()">Apply</button>
-    </div>
-</div>
-
-<div class="container">
-    <!-- First Part: Video Streams -->
-    <div class="video-streams">
-        <!-- Loop through each camera and generate an img tag -->
-        {% for ip_address in page_obj %}
-            <div class="camera-stream-container">
-                <!-- Place the camera stream on the left -->
-                <div class="camera-stream" data-camera-ip="{{ ip_address }}">
-                    <img src="{% url 'safety_detection:video_feed' camera_ip=ip_address %}" width="100" height="100">
-                </div>
-                <!-- Place the JSON data container on the right -->
-                <div class="alarm-data" data-camera-ip="{{ ip_address }}">
-                    <!-- Display JSON data as a table -->
-              
-                </div>
-            </div>
-        {% endfor %}
-    </div>
-</div>
-
-
-
-<!-- Pagination links -->
-<div class="pagination">
-    <span class="step-links">
-        {% if page_obj.has_previous %}
-            <a href="?page=1">&laquo; first</a>
-            <a href="?page={{ page_obj.previous_page_number }}">previous</a>
-        {% endif %}
-
-        <span class="current">
-            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
-        </span>
-
-        {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}">next</a>
-            <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
-        {% endif %}
-    </span>
-</div>
-
-<!-- Modal for displaying images -->
-
-<div id="imageModal" class="modal">
-  <img class="modal-content" id="modalImage">
-  <span class="close" onclick="closeModal()">&times;</span>
-</div>
-
-<script>
-    // Function to fetch and display JSON data for a given camera IP
-    function fetchAndDisplayData(cameraIP) {
-        if (!cameraIP) {
-            console.error('Camera IP is null or invalid');
-            return;
-        }
-        
-        fetch(`/safety_detection/alarm_show/${cameraIP}/`)
-            .then(response => response.json())
-            .then(data => {
-                // Construct HTML to display JSON data as a table
-                let html = `<table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Object</th>
-                                        <th>Camera IP</th>
-                                        <th>Alarm</th>
-                                        <th>Date</th>
-                                        <th>Time</th>
-                                        <th>Image Link</th>
-                                    </tr>
-                                </thead>
-                                <tbody>`;
-                data.forEach(item => {
-                    html += `<tr>
-                                <td>${item.object}</td>
-                                <td>${item.camera_ip}</td>
-                                <td>${item.alarm}</td>
-                                <td>${item.date}</td>
-                                <td>${item.time}</td>
-                                <td><a href="#" onclick="openModal('${item.image_link}'); return false;">View Image</a></td>
-                             </tr>`;
-                });
-                html += `</tbody></table>`;
-
-                // Display JSON data in the corresponding alarm data container
-                const alarmDataDiv = document.querySelector(`.alarm-data[data-camera-ip="${cameraIP}"]`);
-                if (alarmDataDiv) {
-                    alarmDataDiv.innerHTML = html;
-                } else {
-                    console.error(`Alarm data container not found for camera IP: ${cameraIP}`);
-                }
-            })
-            .catch(error => console.error('Error fetching JSON data:', error));
-    }
-
-    // Fetch and display JSON data for each camera IP
-    document.addEventListener('DOMContentLoaded', () => {
-        const cameraStreamDivs = document.querySelectorAll('.camera-stream');
-        cameraStreamDivs.forEach(div => {
-            const cameraIP = div.getAttribute('data-camera-ip');
-            if (cameraIP) {
-                fetchAndDisplayData(cameraIP);
-            }
-        });
-    });
-
-// Open modal and display clicked image
-function openModal(imageSrc) {
-    var modal = document.getElementById('imageModal');
-    var modalImg = document.getElementById("modalImage");
-    modal.style.display = "block";
-    modalImg.src = imageSrc;
-
-    // Show close button
-    var closeButton = document.querySelector('.close');
-    closeButton.style.display = "block";
-}
-
-// Close modal
-function closeModal() {
-    var modal = document.getElementById('imageModal');
-    modal.style.display = "none";
-
-    // Hide close button
-    var closeButton = document.querySelector('.close');
-    closeButton.style.display = "none";
-}
-</script>
-
-<script>
-    // Fetch camera IPs and populate the dropdown
-    function fetchCameraIPs() {
-        fetch("{% url 'filters:get_camera_ips' %}")
-            .then(response => response.json())
-            .then(data => {
-                const cameraIPDropdown = document.getElementById('cameraIP');
-                cameraIPDropdown.innerHTML = ''; // Clear previous options
-                data.camera_info.forEach(camera => {
-                    const option = document.createElement('option');
-                    option.value = camera.ip_address;
-                    option.text = `${camera.ip_address} (${camera.area_name})`;
-                    cameraIPDropdown.appendChild(option);
-                });
-                
-                // Initialize select2 after populating options
-                $('#cameraIP').select2({
-                    placeholder: "Select IP",
-                    allowClear: true // Optional: Add a clear button
-                });
-            })
-            .catch(error => console.error('Error fetching camera IPs:', error));
-    }
-
-    // Fetch detection class names and populate the input field
-    function fetchDetectionClassNames() {
-        fetch("{% url 'filters:get_class_names' %}")
-            .then(response => response.json())
-            .then(data => {
-                const detectionClassDropdown = document.getElementById('detectionClass');
-                detectionClassDropdown.innerHTML = ''; // Clear previous options
-                data.class_names.forEach(className => {
-                    const option = document.createElement('option');
-                    option.value = className;
-                    option.text = className;
-                    detectionClassDropdown.appendChild(option);
-                });
-            })
-            .catch(error => console.error('Error fetching detection class names:', error));
-    }
-
-    // Function to toggle filter sidebar
-    function toggleFilterSidebar() {
-        var sidebar = document.getElementById("filterSidebar");
-        var buttonContainer = document.getElementById("filterButtonContainer");
-        sidebar.classList.toggle("sidebar-open");
-        buttonContainer.classList.toggle("sidebar-open");
-    }
-
-    // Function to apply filter
-    function applyFilter() {
-        var fromDate = document.getElementById("fromDate").value;
-        var toDate = document.getElementById("toDate").value;
-        var cameraIPs = $('#cameraIP').val(); // Get multiple selected values
-        var detectionClass = document.getElementById("detectionClass").value;
-
-        // Construct the URL for redirection
-        var filteredURL = "{% url 'filters:get_filtered_data' %}?fromDate=" + fromDate + "&toDate=" + toDate;
-
-        // Add selected camera IPs to the URL if any are selected
-        if (cameraIPs && cameraIPs.length > 0) {
-            filteredURL += "&cameraIP=" + encodeURIComponent(cameraIPs.join(","));
-        }
-
-        // Add detection class if selected
-        if (detectionClass) {
-            filteredURL += "&detectionClass=" + detectionClass;  
-        }
-
-        // Redirect the user to the filtered URL
-        window.location.href = filteredURL;
-    }
-
-    // Call functions to fetch data when the page loads
-    window.onload = function () {
-        fetchCameraIPs();
-        fetchDetectionClassNames();
-    };
-</script>
-
-</body>
-</html>
+{#<!DOCTYPE html>#}
+{#<html lang="en">#}
+{#<head>#}
+{#    <meta charset="UTF-8">#}
+{#    <meta name="viewport" content="width=device-width, initial-scale=1.0">#}
+{#    <title>{% block title %}AI TechLand{% endblock %}</title>    #}
+{#    #}
+{##}
+{##}
+{#    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script> #}
+{#    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />#}
+{#    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>#}
+{##}
+{#    #}
+{#    <style>#}
+{#        body {#}
+{#            font-family: Arial, sans-serif;#}
+{#            background-color: #f0f0f0;#}
+{#            margin: 0;#}
+{#            padding: 0;#}
+{#            overflow-x: hidden; /* Prevent horizontal scrollbars */#}
+{#        }#}
+{#        #}
+{#        .modal {#}
+{#    display: none;#}
+{#    position: fixed;#}
+{#    z-index: 1000; /* Ensure it's above other content */#}
+{#    padding-top: 50px; /* Center the modal vertically */#}
+{#    left: 0;#}
+{#    top: 0;#}
+{#    width: 100%;#}
+{#    height: 100%;#}
+{#    overflow: auto;#}
+{#    background-color: rgba(0, 0, 0, 0.8); /* Semi-transparent background */#}
+{#}#}
+{##}
+{#/* Modal content */#}
+{#.modal-content {#}
+{#    margin: auto;#}
+{#    display: block;#}
+{#    /* width: 80%; Remove this line */#}
+{#    /* max-width: 800px; Remove this line */#}
+{#    max-height: 80%; /* Limit maximum height */#}
+{#    max-width: 90%; /* Adjust the maximum width */#}
+{#}#}
+{##}
+{#/* Close button */#}
+{#.close {#}
+{#    position: absolute;#}
+{#    top: 10px;#}
+{#    right: 25px;#}
+{#    color: #ffffff;#}
+{#    font-size: 35px;#}
+{#    font-weight: bold;#}
+{#    transition: 0.3s;#}
+{#}#}
+{##}
+{#.close:hover,#}
+{#.close:focus {#}
+{#    color: #aaaaaa;#}
+{#    text-decoration: none;#}
+{#    cursor: pointer;#}
+{#}#}
+{##}
+{#        .menu-bar {#}
+{#            background-color: #333;#}
+{#            color: white;#}
+{#            padding: 10px;#}
+{#            display: flex;#}
+{#            justify-content: space-between;#}
+{#            align-items: center;#}
+{#            position: relative; /* Ensure the menu bar stays above other content */#}
+{#            z-index: 1003; /* Ensure the menu bar is above the filter sidebar */#}
+{#        }#}
+{##}
+{#        .menu-bar a {#}
+{#            color: white;#}
+{#            text-decoration: none;#}
+{#            margin: 0 10px;#}
+{#        }#}
+{##}
+{#        .container {#}
+{#            max-width: 1200px;#}
+{#            margin: 20px auto;#}
+{#            padding: 20px;#}
+{#            background-color: #fff;#}
+{#            border-radius: 8px;#}
+{#            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);#}
+{#            display: grid;#}
+{#            grid-template-columns: 1fr 1fr;#}
+{#            grid-gap: 20px;#}
+{#            position: relative;#}
+{#        }#}
+{##}
+{#        .logout-btn {#}
+{#            text-align: right;#}
+{#        }#}
+{##}
+{#        .logout-btn a {#}
+{#            text-decoration: none;#}
+{#            color: #007bff;#}
+{#        }#}
+{##}
+{#        .camera-stream {#}
+{#            border-radius: 8px;#}
+{#            overflow: hidden;#}
+{#        }#}
+{##}
+{#        .camera-stream img {#}
+{#            display: block;#}
+{#            width: 100%;#}
+{#            height: auto;#}
+{#        }#}
+{##}
+{#        .pagination {#}
+{#            margin-top: 20px;#}
+{#            text-align: center;#}
+{#        }#}
+{##}
+{#        .pagination a {#}
+{#            color: #007bff;#}
+{#            text-decoration: none;#}
+{#            padding: 8px 16px;#}
+{#            transition: background-color 0.3s;#}
+{#            border: 1px solid #007bff;#}
+{#            border-radius: 5px;#}
+{#            background-color: #fff; /* Change background color */#}
+{#        }#}
+{##}
+{#        .pagination a:hover {#}
+{#            background-color: #007bff;#}
+{#            color: #fff;#}
+{#        }#}
+{##}
+{#        .pagination .current {#}
+{#            background-color: #007bff;#}
+{#            color: #fff;#}
+{#            padding: 8px 16px;#}
+{#            border-radius: 5px;#}
+{#        }#}
+{##}
+{#        /* Filter Button */#}
+{#        .filter-btn-container {#}
+{#            position: fixed;#}
+{#            top: 40px; /* Adjust the value to move it down by 10px */#}
+{#            left: 20px;#}
+{#            z-index: 1001; /* Ensure it's above other content */#}
+{#            transition: left 0.3s ease-in-out;#}
+{#        }#}
+{##}
+{#        .filter-btn {#}
+{#            background-color: #007bff;#}
+{#            color: white;#}
+{#            border: none;#}
+{#            border-radius: 8px;#}
+{#            padding: 10px 20px;#}
+{#            cursor: pointer;#}
+{#            position: relative;#}
+{#            z-index: 1002; /* Ensure it's above the sidebar */#}
+{#        }#}
+{##}
+{#        /* Filter Sidebar */#}
+{#        .filter-sidebar {#}
+{#            position: fixed;#}
+{#            top: 0;#}
+{#            left: -220px; /* Move it off-screen initially */#}
+{#            width: 220px;#}
+{#            height: 100%;#}
+{#            background-color: #fff;#}
+{#            border-radius: 0 8px 8px 0;#}
+{#            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);#}
+{#            padding: 20px;#}
+{#            z-index: 1000; /* Ensure it's above other content */#}
+{#            transition: left 0.3s ease-in-out;#}
+{#        }#}
+{##}
+{#        /* Show Sidebar */#}
+{#        .sidebar-open {#}
+{#            left: 0;#}
+{#        }#}
+{##}
+{#        /* Filter Popup */#}
+{#        .filter-popup {#}
+{#            display: none;#}
+{#        }#}
+{##}
+{#        /* Adjusting Filter Button Text Position */#}
+{#        .filter-btn::after {#}
+{#            content: "Filter";#}
+{#            position: absolute;#}
+{#            top: 50%;#}
+{#            left: 50%;#}
+{#            transform: translate(-50%, -50%);#}
+{#        }#}
+{##}
+{#        .sidebar-heading {#}
+{#            margin-bottom: 70px; /* Adjust this value as needed */#}
+{#        }#}
+{##}
+{#        /* Adjust the width of the filter dropdowns */#}
+{#        #cameraIP, #detectionClass, #fromDate, #toDate {#}
+{#            width: calc(100% - 40px); /* Set the width to 100% of the parent container minus padding */#}
+{#            padding: 10px; /* Add padding */#}
+{#            box-sizing: border-box; /* Ensure padding is included in width calculation */#}
+{#        }#}
+{##}
+{#        /* Style for the Apply button */#}
+{#        #applyButton {#}
+{#            background-color: #007bff; /* Match the filter button color */#}
+{#            color: white;#}
+{#            border: none;#}
+{#            border-radius: 8px;#}
+{#            padding: 8px 16px;#}
+{#            cursor: pointer;#}
+{#            margin-top: 10px;#}
+{#            margin-right: 20px; /* Add margin to separate from the filter button */#}
+{#            float: right; /* Float to the left side */#}
+{#        }#}
+{#        #}
+{#        .camera-stream-container {#}
+{#            display: flex;#}
+{#            align-items: center; /* Align items vertically */#}
+{#        }#}
+{##}
+{#        /* Style for the streaming video */#}
+{#        .camera-stream {#}
+{#            border-radius: 8px;#}
+{#            overflow: hidden;#}
+{#            flex: 0 0 auto; /* Allow shrinking and growing, but don't let it grow beyond its initial size */#}
+{#            margin-right: 10px; /* Add margin to separate from the JSON data container */#}
+{#        }#}
+{##}
+{#        .camera-stream img {#}
+{#            display: block;#}
+{#            width: 100%;#}
+{#            height: auto;#}
+{#        }#}
+{##}
+{#        /* Style for the JSON data container */#}
+{#        .alarm-data {#}
+{#            flex: 1; /* Allow the JSON data container to grow and fill the remaining space */#}
+{#        }#}
+{#    </style>#}
+{#    <style>#}
+{#        .data-table {#}
+{#            width: 100%;#}
+{#            border-collapse: collapse;#}
+{#        }#}
+{##}
+{#        .data-table th, .data-table td {#}
+{#            border: 1px solid #ddd;#}
+{#            padding: 8px;#}
+{#            text-align: left;#}
+{#        }#}
+{##}
+{#        .data-table th {#}
+{#            background-color: #f2f2f2;#}
+{#        }#}
+{##}
+{#        .data-table tbody tr:nth-child(even) {#}
+{#            background-color: #f2f2f2;#}
+{#        }#}
+{##}
+{#        .data-table tbody tr:hover {#}
+{#            background-color: #ddd;#}
+{#        }#}
+{#       /* Close button */#}
+{#        .modal {#}
+{#            display: none;#}
+{#            position: fixed;#}
+{#            z-index: 1000; /* Ensure it's above other content */#}
+{#            left: 0;#}
+{#            top: 0;#}
+{#            width: 100%;#}
+{#            height: 100%;#}
+{#            background-color: rgba(0, 0, 0, 0.8); /* Semi-transparent background */#}
+{#            overflow: auto;#}
+{#        }#}
+{#        #}
+{#        /* Close button */#}
+{#        .close {#}
+{#            position: absolute;#}
+{#            top: 50%;#}
+{#            right: 10px;#}
+{#            color: #ffffff;#}
+{#            font-size: 35px;#}
+{#            font-weight: bold;#}
+{#            transition: 0.3s;#}
+{#            transform: translateY(-50%); /* Vertically center the close button */#}
+{#            cursor: pointer;#}
+{#            z-index: 1001; /* Ensure it's above the image */#}
+{#        }#}
+{#        #}
+{#        /* Close button hover effect */#}
+{#        .close:hover {#}
+{#            color: #aaaaaa;#}
+{#        }#}
+{#    </style>#}
+{#</head>#}
+{#<body>#}
+{#<!-- Menu bar -->#}
+{#<div class="menu-bar">#}
+{#    <div>#}
+{#        <a class="navbar-brand" href="#">AI TechLand</a>#}
+{#        <a href="{% url 'safety_detection:index' %}">Live</a>#}
+{#        <a href="{% url 'safety_detection:alarm_index' %}">Alarm</a>#}
+{#        <a href="{% url 'safety_detection:processed_index' %}">Processed</a>#}
+{#        <a href="{% url 'safety_detection:monitoring_index' %}">Monitoring</a>#}
+{#        <a href="#">Analytics</a>#}
+{#    </div>#}
+{#    <div>#}
+{#        <a href="{% url 'login' %}">Logout</a>#}
+{#    </div>#}
+{#</div>#}
+{##}
+{##}
+{#<!-- Multi-select input -->#}
+{##}
+{##}
+{#<!-- Filter Button and Sidebar Container -->#}
+{#<div class="filter-btn-container" id="filterButtonContainer">#}
+{#    <button class="filter-btn" id="filterButton" onclick="toggleFilterSidebar()">Filter</button>#}
+{##}
+{#    <!-- Filter Sidebar -->#}
+{#    <div class="filter-sidebar" id="filterSidebar">#}
+{#        <h3 class="sidebar-heading"></h3>#}
+{#        <div>#}
+{#            <label for="fromDate">From:</label>#}
+{#            <br>#}
+{#            <input type="date" id="fromDate">#}
+{#        </div>#}
+{#        <div style="margin-top: 10px;">#}
+{#            <label for="toDate">To:</label>#}
+{#            <br>#}
+{#            <input type="date" id="toDate">#}
+{#        </div>#}
+{#        <div style="margin-top: 10px;">#}
+{#        <label for="cameraIP">Camera IP:</label>#}
+{#        <select id="cameraIP" autocomplete="off" multiple>#}
+{#            <option value="">Select IP</option>#}
+{#        </select>#}
+{#         </div>#}
+{##}
+{#        <div style="margin-top: 10px;">#}
+{#            <label for="detectionClass">Detection Class:</label>#}
+{#            <br>#}
+{#            <select id="detectionClass" autocomplete="off">#}
+{#                <option value="">Select class</option>#}
+{#            </select>#}
+{#        </div>#}
+{#        <br> <!-- Add a line break here -->#}
+{#        <button id="applyButton" onclick="applyFilter()">Apply</button>#}
+{#    </div>#}
+{#</div>#}
+{##}
+{#<div class="container">#}
+{#    <!-- First Part: Video Streams -->#}
+{#    <div class="video-streams">#}
+{#        <!-- Loop through each camera and generate an img tag -->#}
+{#        {% for ip_address in page_obj %}#}
+{#            <div class="camera-stream-container">#}
+{#                <!-- Place the camera stream on the left -->#}
+{#                <div class="camera-stream" data-camera-ip="{{ ip_address }}">#}
+{#                    <img src="{% url 'safety_detection:video_feed' camera_ip=ip_address %}" width="100" height="100">#}
+{#                </div>#}
+{#                <!-- Place the JSON data container on the right -->#}
+{#                <div class="alarm-data" data-camera-ip="{{ ip_address }}">#}
+{#                    <!-- Display JSON data as a table -->#}
+{#              #}
+{#                </div>#}
+{#            </div>#}
+{#        {% endfor %}#}
+{#    </div>#}
+{#</div>#}
+{##}
+{##}
+{##}
+{#<!-- Pagination links -->#}
+{#<div class="pagination">#}
+{#    <span class="step-links">#}
+{#        {% if page_obj.has_previous %}#}
+{#            <a href="?page=1">&laquo; first</a>#}
+{#            <a href="?page={{ page_obj.previous_page_number }}">previous</a>#}
+{#        {% endif %}#}
+{##}
+{#        <span class="current">#}
+{#            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.#}
+{#        </span>#}
+{##}
+{#        {% if page_obj.has_next %}#}
+{#            <a href="?page={{ page_obj.next_page_number }}">next</a>#}
+{#            <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>#}
+{#        {% endif %}#}
+{#    </span>#}
+{#</div>#}
+{##}
+{#<!-- Modal for displaying images -->#}
+{##}
+{#<div id="imageModal" class="modal">#}
+{#  <img class="modal-content" id="modalImage">#}
+{#  <span class="close" onclick="closeModal()">&times;</span>#}
+{#</div>#}
+{##}
+{#<script>#}
+{#    // Function to fetch and display JSON data for a given camera IP#}
+{#    function fetchAndDisplayData(cameraIP) {#}
+{#        if (!cameraIP) {#}
+{#            console.error('Camera IP is null or invalid');#}
+{#            return;#}
+{#        }#}
+{#        #}
+{#        fetch(`/safety_detection/alarm_show/${cameraIP}/`)#}
+{#            .then(response => response.json())#}
+{#            .then(data => {#}
+{#                // Construct HTML to display JSON data as a table#}
+{#                let html = `<table class="data-table">#}
+{#                                <thead>#}
+{#                                    <tr>#}
+{#                                        <th>Object</th>#}
+{#                                        <th>Camera IP</th>#}
+{#                                        <th>Alarm</th>#}
+{#                                        <th>Date</th>#}
+{#                                        <th>Time</th>#}
+{#                                        <th>Image Link</th>#}
+{#                                    </tr>#}
+{#                                </thead>#}
+{#                                <tbody>`;#}
+{#                data.forEach(item => {#}
+{#                    html += `<tr>#}
+{#                                <td>${item.object}</td>#}
+{#                                <td>${item.camera_ip}</td>#}
+{#                                <td>${item.alarm}</td>#}
+{#                                <td>${item.date}</td>#}
+{#                                <td>${item.time}</td>#}
+{#                                <td><a href="#" onclick="openModal('${item.image_link}'); return false;">View Image</a></td>#}
+{#                             </tr>`;#}
+{#                });#}
+{#                html += `</tbody></table>`;#}
+{##}
+{#                // Display JSON data in the corresponding alarm data container#}
+{#                const alarmDataDiv = document.querySelector(`.alarm-data[data-camera-ip="${cameraIP}"]`);#}
+{#                if (alarmDataDiv) {#}
+{#                    alarmDataDiv.innerHTML = html;#}
+{#                } else {#}
+{#                    console.error(`Alarm data container not found for camera IP: ${cameraIP}`);#}
+{#                }#}
+{#            })#}
+{#            .catch(error => console.error('Error fetching JSON data:', error));#}
+{#    }#}
+{##}
+{#    // Fetch and display JSON data for each camera IP#}
+{#    document.addEventListener('DOMContentLoaded', () => {#}
+{#        const cameraStreamDivs = document.querySelectorAll('.camera-stream');#}
+{#        cameraStreamDivs.forEach(div => {#}
+{#            const cameraIP = div.getAttribute('data-camera-ip');#}
+{#            if (cameraIP) {#}
+{#                fetchAndDisplayData(cameraIP);#}
+{#            }#}
+{#        });#}
+{#    });#}
+{##}
+{#// Open modal and display clicked image#}
+{#function openModal(imageSrc) {#}
+{#    var modal = document.getElementById('imageModal');#}
+{#    var modalImg = document.getElementById("modalImage");#}
+{#    modal.style.display = "block";#}
+{#    modalImg.src = imageSrc;#}
+{##}
+{#    // Show close button#}
+{#    var closeButton = document.querySelector('.close');#}
+{#    closeButton.style.display = "block";#}
+{#}#}
+{##}
+{#// Close modal#}
+{#function closeModal() {#}
+{#    var modal = document.getElementById('imageModal');#}
+{#    modal.style.display = "none";#}
+{##}
+{#    // Hide close button#}
+{#    var closeButton = document.querySelector('.close');#}
+{#    closeButton.style.display = "none";#}
+{#}#}
+{#</script>#}
+{##}
+{#<script>#}
+{#    // Fetch camera IPs and populate the dropdown#}
+{#    function fetchCameraIPs() {#}
+{#        fetch("{% url 'filters:get_camera_ips' %}")#}
+{#            .then(response => response.json())#}
+{#            .then(data => {#}
+{#                const cameraIPDropdown = document.getElementById('cameraIP');#}
+{#                cameraIPDropdown.innerHTML = ''; // Clear previous options#}
+{#                data.camera_info.forEach(camera => {#}
+{#                    const option = document.createElement('option');#}
+{#                    option.value = camera.ip_address;#}
+{#                    option.text = `${camera.ip_address} (${camera.area_name})`;#}
+{#                    cameraIPDropdown.appendChild(option);#}
+{#                });#}
+{#                #}
+{#                // Initialize select2 after populating options#}
+{#                $('#cameraIP').select2({#}
+{#                    placeholder: "Select IP",#}
+{#                    allowClear: true // Optional: Add a clear button#}
+{#                });#}
+{#            })#}
+{#            .catch(error => console.error('Error fetching camera IPs:', error));#}
+{#    }#}
+{##}
+{#    // Fetch detection class names and populate the input field#}
+{#    function fetchDetectionClassNames() {#}
+{#        fetch("{% url 'filters:get_class_names' %}")#}
+{#            .then(response => response.json())#}
+{#            .then(data => {#}
+{#                const detectionClassDropdown = document.getElementById('detectionClass');#}
+{#                detectionClassDropdown.innerHTML = ''; // Clear previous options#}
+{#                data.class_names.forEach(className => {#}
+{#                    const option = document.createElement('option');#}
+{#                    option.value = className;#}
+{#                    option.text = className;#}
+{#                    detectionClassDropdown.appendChild(option);#}
+{#                });#}
+{#            })#}
+{#            .catch(error => console.error('Error fetching detection class names:', error));#}
+{#    }#}
+{##}
+{#    // Function to toggle filter sidebar#}
+{#    function toggleFilterSidebar() {#}
+{#        var sidebar = document.getElementById("filterSidebar");#}
+{#        var buttonContainer = document.getElementById("filterButtonContainer");#}
+{#        sidebar.classList.toggle("sidebar-open");#}
+{#        buttonContainer.classList.toggle("sidebar-open");#}
+{#    }#}
+{##}
+{#    // Function to apply filter#}
+{#    function applyFilter() {#}
+{#        var fromDate = document.getElementById("fromDate").value;#}
+{#        var toDate = document.getElementById("toDate").value;#}
+{#        var cameraIPs = $('#cameraIP').val(); // Get multiple selected values#}
+{#        var detectionClass = document.getElementById("detectionClass").value;#}
+{##}
+{#        // Construct the URL for redirection#}
+{#        var filteredURL = "{% url 'filters:get_filtered_data' %}?fromDate=" + fromDate + "&toDate=" + toDate;#}
+{##}
+{#        // Add selected camera IPs to the URL if any are selected#}
+{#        if (cameraIPs && cameraIPs.length > 0) {#}
+{#            filteredURL += "&cameraIP=" + encodeURIComponent(cameraIPs.join(","));#}
+{#        }#}
+{##}
+{#        // Add detection class if selected#}
+{#        if (detectionClass) {#}
+{#            filteredURL += "&detectionClass=" + detectionClass;  #}
+{#        }#}
+{##}
+{#        // Redirect the user to the filtered URL#}
+{#        window.location.href = filteredURL;#}
+{#    }#}
+{##}
+{#    // Call functions to fetch data when the page loads#}
+{#    window.onload = function () {#}
+{#        fetchCameraIPs();#}
+{#        fetchDetectionClassNames();#}
+{#    };#}
+{#</script>#}
+{##}
+{#</body>#}
+{#</html>#}

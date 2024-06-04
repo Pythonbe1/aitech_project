@@ -13,7 +13,7 @@ class LoginView(TemplateView):
         if user is not None:
             login(request, user)
             # Redirect to the success URL upon successful login
-            return redirect('safety_detection:index')
+            return redirect('safety_detection:alarm_index')
         # Assuming 'success' is the name of the URL pattern for SuccessView
         else:
             # Display an error message if authentication fails.
