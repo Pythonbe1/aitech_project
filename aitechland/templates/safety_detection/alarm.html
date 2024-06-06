@@ -381,6 +381,8 @@
             <th>Alarm</th>
             <th>Date</th>
             <th>Time</th>
+            <th>Full Name</th>
+            <th>Company</th>
             <th>Image Link</th>
         </tr>
     </thead>
@@ -392,6 +394,9 @@
                 <td>{{ image.alarm }}</td>
                 <td>{{ image.date }}</td>
                 <td>{{ image.time }}</td>
+                <td>{{ '' }}</td>
+                <td>{{ '' }}</td>
+
                 <td><a href="#" onclick="openModal('{{ image.image_link }}'); return false;">alarm image</a></td>
 
             </tr>

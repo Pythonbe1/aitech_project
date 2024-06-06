@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'safety_detection',
     'account',
     'filters',
+    'daemon',
 ]
 
 MIDDLEWARE = [
@@ -119,7 +120,7 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 weights_folder = os.path.join(BASE_DIR, 'safety_detection', 'weights')
-file_name = 'best.pt'
+file_name = 'best_main.pt'
 # Construct the absolute path to the file
 NEURAL_PATH = os.path.join(weights_folder, file_name)
 
