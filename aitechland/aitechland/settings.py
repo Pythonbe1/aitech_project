@@ -74,7 +74,6 @@ TEMPLATES = [
         },
     },
 ]
-
 WSGI_APPLICATION = 'aitechland.wsgi.application'
 
 # Database
@@ -110,7 +109,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Almaty'
 
 USE_I18N = True
 
@@ -120,6 +119,8 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 weights_folder = os.path.join(BASE_DIR, 'safety_detection', 'weights')
+
+# Define the name of the weights file
 file_name = 'best_main.pt'
 # Construct the absolute path to the file
 NEURAL_PATH = os.path.join(weights_folder, file_name)
@@ -131,6 +132,8 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
+
+ADMINLTE2_THEMING = 'default'  # or 'dark' for dark theme
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
