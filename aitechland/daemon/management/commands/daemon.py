@@ -1,4 +1,3 @@
-# myapp/management/commands/run_daemon.py
 import logging
 import multiprocessing
 import time
@@ -18,13 +17,16 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         self.stdout.write("Starting daemon...")
+        self.daemonize()
 
+    def daemonize(self):
         while True:
-            self.stdout.write("Daemon is working...")
-            self.process_cameras()
+            try:
+                self.stdout.write("Daemon is working...")
+                self.process_cameras()
+            except Exception as e:
+                logging.error(f"Error in daemon process: {e}")
             time.sleep(10)  # Sleep for 10 seconds
-
-        self.stdout.write("Daemon stopped.")
 
     def process_cameras(self):
         cameras = Camera.objects.select_related('credential_for_ip').all()
@@ -35,14 +37,12 @@ class Command(BaseCommand):
 
     def start_processing(self, data):
         num_cores = min(multiprocessing.cpu_count(), 8)
-        pool = Pool(processes=num_cores)
-        weights_path = getattr(settings, 'NEURAL_PATH', None)  # Get weights path from settings
-        if weights_path:
-            pool.map(self.stream_camera, [(camera_data, weights_path) for camera_data in data])
-        else:
-            logging.error("Weights path is not defined in settings.")
-        pool.close()
-        pool.join()
+        with Pool(processes=num_cores) as pool:
+            weights_path = getattr(settings, 'NEURAL_PATH', None)  # Get weights path from settings
+            if weights_path:
+                pool.map(self.stream_camera, [(camera_data, weights_path) for camera_data in data])
+            else:
+                logging.error("Weights path is not defined in settings.")
 
     @staticmethod
     def stream_camera(args):
@@ -53,5 +53,7 @@ class Command(BaseCommand):
             f"/cam/realmonitor?channel={channel_id}&subtype=0&unicast=true&proto=Onvif"
         )
         viewer = CameraStreamViewer(video_url, weights_path)
-        viewer.start()
-        viewer.release()
+        try:
+            viewer.start()
+        finally:
+            viewer.release()

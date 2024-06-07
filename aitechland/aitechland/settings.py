@@ -124,6 +124,7 @@ weights_folder = os.path.join(BASE_DIR, 'safety_detection', 'weights')
 file_name = 'best_main.pt'
 # Construct the absolute path to the file
 NEURAL_PATH = os.path.join(weights_folder, file_name)
+CAMERA_SAVE_INTERVAL = 120
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
