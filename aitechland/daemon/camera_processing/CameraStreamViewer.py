@@ -8,8 +8,9 @@ from safety_detection.models import CameraState, Image, Camera, DetectionClasses
 import logging
 from django.conf import settings
 from daemon.constants import CLASS_NAMES  # Import the class names from constants
+from datetime import datetime, timedelta
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 
 class CameraStreamViewer:
@@ -29,7 +30,7 @@ class CameraStreamViewer:
         if not self.cap.isOpened():
             self.update_camera_state('Offline')
         self.last_detection_time = {}
-        self.last_state_update_time = time.time()
+        self.last_state_update_time = datetime.now()
 
     def _extract_camera_ip(self) -> str:
         """
@@ -41,18 +42,26 @@ class CameraStreamViewer:
 
     def update_camera_state(self, state: str):
         """
-        Update the camera state in the database.
+        Update the camera state in the database if more than 41 minutes have passed since the last update.
 
         :param state: The new state of the camera.
         """
-        current_time = time.time()
-        if current_time - self.last_state_update_time >= settings.CAMERA_SAVE_INTERVAL:
-            CameraState.objects.update_or_create(
-                camera_ip=self.camera_ip,
-                defaults={'state': state}
-            )
-            self.last_state_update_time = current_time
-            logging.info(f'Camera state updated to {state} for IP: {self.camera_ip}')
+        current_time = datetime.now()
+        time_diff = current_time - self.last_state_update_time
+
+        # Check if more than 41 minutes have passed since the last update
+        if time_diff >= timedelta(seconds=60):
+            try:
+                CameraState.objects.update_or_create(
+                    camera_ip=self.camera_ip,
+                    defaults={'state': state}
+                )
+                self.last_state_update_time = current_time
+                logging.info(f'Camera state updated to {state} for IP: {self.camera_ip}')
+            except Exception as e:
+                logging.error(f"Error updating camera state: {e}")
+        else:
+            logging.debug(f'Skipping state update for IP: {self.camera_ip}, last update was {time_diff} ago.')
 
     def start(self):
         """

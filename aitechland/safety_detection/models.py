@@ -74,8 +74,8 @@ class CameraState(models.Model):
     id = models.AutoField(primary_key=True)
     camera_ip = models.CharField(max_length=100, unique=True)  # Assuming camera_ip is unique
     state = models.CharField(max_length=100, default='Online')
-    create_date = models.DateField(auto_now_add=True)
-    create_time = models.TimeField(auto_now_add=True)
+    create_date = models.DateField(auto_now=True)
+    create_time = models.TimeField(auto_now=True)
 
     class Meta:
         db_table = 'camera_state'
