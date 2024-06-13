@@ -2,6 +2,8 @@ import os
 import time
 import cv2
 import torch
+import threading
+import queue
 from ultralytics import YOLO
 from daemon.calculation.Calculation import Calculation
 from safety_detection.models import CameraState, Image, Camera, DetectionClasses
@@ -14,23 +16,31 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 class CameraStreamViewer:
-    def __init__(self, url: str, weights_path: str, save_path: str = None):
+    def __init__(self, url: str, weights_path: str, frame_rate: int = 30, save_path: str = None):
         """
         Initialize the CameraStreamViewer.
 
         :param url: The URL of the camera stream.
         :param weights_path: Path to the model weights.
+        :param frame_rate: The desired frame rate for the video stream.
         :param save_path: Path to save images, defaults to settings.MEDIA_ROOT.
         """
         self.url = url
         self.weights_path = weights_path
+        self.frame_rate = frame_rate
         self.save_path = save_path or settings.MEDIA_ROOT
         self.cap = cv2.VideoCapture(url)
         self.camera_ip = self._extract_camera_ip()
-        if not self.cap.isOpened():
-            self.update_camera_state('Offline')
         self.last_detection_time = {}
-        self.last_state_update_time = datetime.now()
+        self.last_state_update_time = datetime.now()  # Initialize last_state_update_time
+        self.last_error_time = None  # Track the last error time
+        self.frame_queue = queue.Queue(maxsize=30)  # Queue to hold frames
+        self.stop_event = threading.Event()  # Event to stop the thread
+
+        if self.cap.isOpened():
+            self.cap.set(cv2.CAP_PROP_FPS, self.frame_rate)  # Set the frame rate
+        else:
+            self.update_camera_state('Offline')
 
     def _extract_camera_ip(self) -> str:
         """
@@ -42,14 +52,13 @@ class CameraStreamViewer:
 
     def update_camera_state(self, state: str):
         """
-        Update the camera state in the database if more than 41 minutes have passed since the last update.
+        Update the camera state in the database if more than 60 seconds have passed since the last update.
 
         :param state: The new state of the camera.
         """
         current_time = datetime.now()
         time_diff = current_time - self.last_state_update_time
 
-        # Check if more than 41 minutes have passed since the last update
         if time_diff >= timedelta(seconds=60):
             try:
                 CameraState.objects.update_or_create(
@@ -60,8 +69,6 @@ class CameraStreamViewer:
                 logging.info(f'Camera state updated to {state} for IP: {self.camera_ip}')
             except Exception as e:
                 logging.error(f"Error updating camera state: {e}")
-        else:
-            logging.debug(f'Skipping state update for IP: {self.camera_ip}, last update was {time_diff} ago.')
 
     def start(self):
         """
@@ -69,15 +76,41 @@ class CameraStreamViewer:
         """
         device = "cuda" if torch.cuda.is_available() else "cpu"
         model = YOLO(self.weights_path).to(device)
-        while True:
-            ret, frame = self.cap.read()
-            if frame is not None:
-                self.update_camera_state('Online')
-                self._process_frame(frame, model)
-            else:
+
+        # Start the frame reading thread
+        threading.Thread(target=self._read_frames, daemon=True).start()
+
+        while not self.stop_event.is_set():
+            try:
+                frame = self.frame_queue.get(timeout=2)
+                if frame is not None:
+                    self.update_camera_state('Online')
+                    self._process_frame(frame, model)
+                else:
+                    self.update_camera_state('Offline')
+                    logging.warning(f"Failed to read frame from camera: {self.camera_ip}")
+                    self.last_error_time = datetime.now()
+            except queue.Empty:
+                logging.warning(f"No frames received from camera: {self.camera_ip}")
                 self.update_camera_state('Offline')
-                logging.warning("Failed to read frame from camera: %s", self.camera_ip)
-                time.sleep(2)
+                self.last_error_time = datetime.now()
+
+    def _read_frames(self):
+        """
+        Continuously read frames from the camera and put them into the queue.
+        """
+        while not self.stop_event.is_set():
+            ret, frame = self.cap.read()
+            if not ret:
+                self.update_camera_state('Offline')
+                logging.warning(f"Failed to read frame from camera: {self.camera_ip}")
+                self.last_error_time = datetime.now()
+                continue
+
+            if not self.frame_queue.full():
+                self.frame_queue.put(frame)
+            # else:
+            #     logging.debug(f"Frame queue is full, dropping frame for camera: {self.camera_ip}")
 
     def _process_frame(self, frame, model):
         """
@@ -175,5 +208,6 @@ class CameraStreamViewer:
         """
         Release the camera resource.
         """
+        self.stop_event.set()  # Set the stop event to stop the frame reading thread
         self.cap.release()
         cv2.destroyAllWindows()
