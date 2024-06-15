@@ -70,7 +70,7 @@ class CameraStreamViewer:
 
     def _process_frame(self, frame, model):
         resize_frame = cv2.resize(frame, (640, 640), interpolation=cv2.INTER_LINEAR)
-        results = model.track(resize_frame, conf=0.01, verbose=False, tracker='bytetrack.yaml')
+        results = model.track(resize_frame, conf=0.50, verbose=False, tracker='bytetrack.yaml')
         class_counts = Calculation.count_classes(results[0].names, results[0].boxes.cls.int().tolist())
         if any(class_name in class_counts for class_name in CLASS_NAMES):
             self._handle_detections(class_counts, results[0])
