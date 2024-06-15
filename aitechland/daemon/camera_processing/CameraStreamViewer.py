@@ -1,30 +1,28 @@
+import logging
+import multiprocessing
 import os
+import queue
+import threading
 import time
+from datetime import datetime, timedelta
+
 import cv2
 import torch
-import threading
-import queue
 from ultralytics import YOLO
+
 from daemon.calculation.Calculation import Calculation
+from daemon.constants import CLASS_NAMES
 from safety_detection.models import CameraState, Image, Camera, DetectionClasses
-import logging
 from django.conf import settings
-from daemon.constants import CLASS_NAMES  # Import the class names from constants
-from datetime import datetime, timedelta
 
 logging.basicConfig(level=logging.DEBUG)
 
 
 class CameraStreamViewer:
-    def __init__(self, url: str, weights_path: str, frame_rate: int = 30, save_path: str = None):
-        """
-        Initialize the CameraStreamViewer.
-
-        :param url: The URL of the camera stream.
-        :param weights_path: Path to the model weights.
-        :param frame_rate: The desired frame rate for the video stream.
-        :param save_path: Path to save images, defaults to settings.MEDIA_ROOT.
-        """
+    def __init__(self, url: str, weights_path: str,
+                 frame_rate: int = 1, save_path: str = None,
+                 queue_size: int = 50):
+        self.stop_event = multiprocessing.Event()
         self.url = url
         self.weights_path = weights_path
         self.frame_rate = frame_rate
@@ -32,33 +30,16 @@ class CameraStreamViewer:
         self.cap = cv2.VideoCapture(url)
         self.camera_ip = self._extract_camera_ip()
         self.last_detection_time = {}
-        self.last_state_update_time = datetime.now()  # Initialize last_state_update_time
-        self.last_error_time = None  # Track the last error time
-        self.frame_queue = queue.Queue(maxsize=30)  # Queue to hold frames
-        self.stop_event = threading.Event()  # Event to stop the thread
-
-        if self.cap.isOpened():
-            self.cap.set(cv2.CAP_PROP_FPS, self.frame_rate)  # Set the frame rate
-        else:
-            self.update_camera_state('Offline')
+        self.last_state_update_time = datetime.now()
+        self.last_error_time = None
+        self.frame_queue = queue.Queue(maxsize=queue_size)
 
     def _extract_camera_ip(self) -> str:
-        """
-        Extract the camera IP address from the URL.
-
-        :return: The IP address as a string.
-        """
         return self.url.split('@')[1].split(':')[0]
 
     def update_camera_state(self, state: str):
-        """
-        Update the camera state in the database if more than 60 seconds have passed since the last update.
-
-        :param state: The new state of the camera.
-        """
         current_time = datetime.now()
         time_diff = current_time - self.last_state_update_time
-
         if time_diff >= timedelta(seconds=60):
             try:
                 CameraState.objects.update_or_create(
@@ -71,67 +52,30 @@ class CameraStreamViewer:
                 logging.error(f"Error updating camera state: {e}")
 
     def start(self):
-        """
-        Start the camera stream processing.
-        """
         device = "cuda" if torch.cuda.is_available() else "cpu"
         model = YOLO(self.weights_path).to(device)
-
-        # Start the frame reading thread
-        threading.Thread(target=self._read_frames, daemon=True).start()
-
         while not self.stop_event.is_set():
-            try:
-                frame = self.frame_queue.get(timeout=2)
-                if frame is not None:
+            if self.cap.grab():
+                start_time = time.time()
+                ret, frame = self.cap.retrieve()
+                if ret:
                     self.update_camera_state('Online')
                     self._process_frame(frame, model)
-                else:
-                    self.update_camera_state('Offline')
-                    logging.warning(f"Failed to read frame from camera: {self.camera_ip}")
-                    self.last_error_time = datetime.now()
-            except queue.Empty:
-                logging.warning(f"No frames received from camera: {self.camera_ip}")
+                    # Ensure the frame rate
+                    elapsed_time = time.time() - start_time
+                    sleep_time = max(15.0 / self.frame_rate - elapsed_time, 0)
+                    time.sleep(sleep_time)
+            else:
                 self.update_camera_state('Offline')
-                self.last_error_time = datetime.now()
-
-    def _read_frames(self):
-        """
-        Continuously read frames from the camera and put them into the queue.
-        """
-        while not self.stop_event.is_set():
-            ret, frame = self.cap.read()
-            if not ret:
-                self.update_camera_state('Offline')
-                logging.warning(f"Failed to read frame from camera: {self.camera_ip}")
-                self.last_error_time = datetime.now()
-                continue
-
-            if not self.frame_queue.full():
-                self.frame_queue.put(frame)
-            # else:
-            #     logging.debug(f"Frame queue is full, dropping frame for camera: {self.camera_ip}")
 
     def _process_frame(self, frame, model):
-        """
-        Process a single frame from the camera stream.
-
-        :param frame: The frame to process.
-        :param model: The YOLO model for prediction.
-        """
         resize_frame = cv2.resize(frame, (640, 640), interpolation=cv2.INTER_LINEAR)
-        results = model.predict(resize_frame, conf=0.60, verbose=False)
+        results = model.track(resize_frame, conf=0.01, verbose=False, tracker='bytetrack.yaml')
         class_counts = Calculation.count_classes(results[0].names, results[0].boxes.cls.int().tolist())
         if any(class_name in class_counts for class_name in CLASS_NAMES):
             self._handle_detections(class_counts, results[0])
 
     def _handle_detections(self, class_counts, results):
-        """
-        Handle the detections in a frame.
-
-        :param class_counts: Counts of detected classes.
-        :param results: YOLO detection results.
-        """
         current_time = time.time()
         if current_time - self.last_detection_time.get(self.camera_ip, 0) >= settings.CAMERA_SAVE_INTERVAL:
             self.last_detection_time[self.camera_ip] = current_time
@@ -145,13 +89,6 @@ class CameraStreamViewer:
                 logging.warning("Camera info not found. Skipping saving and database operations.")
 
     def _save_detection(self, frame, class_name: str, camera_info: tuple):
-        """
-        Save a detection frame and update the database.
-
-        :param frame: The frame to save.
-        :param class_name: The detected class name.
-        :param camera_info: Tuple containing camera and class IDs.
-        """
         camera_id, class_name_id = camera_info
         timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
         filename = f"{self.camera_ip}_{class_name}_{timestamp}.jpeg"
@@ -164,21 +101,9 @@ class CameraStreamViewer:
             logging.error(f"Error saving frame: {e}")
 
     def save_frame(self, filepath: str):
-        """
-        Log the saved frame.
-
-        :param filepath: Path to the saved frame.
-        """
         logging.info(f'Frame saved at: {filepath}')
 
     def get_camera_and_class_ids(self, camera_ip: str, class_name: str) -> tuple:
-        """
-        Get the camera and class IDs from the database.
-
-        :param camera_ip: The camera IP address.
-        :param class_name: The class name.
-        :return: Tuple containing camera ID and class ID, or None if not found.
-        """
         try:
             camera = Camera.objects.get(ip_address=camera_ip)
             class_obj = DetectionClasses.objects.get(name=class_name)
@@ -190,13 +115,6 @@ class CameraStreamViewer:
         return None
 
     def save_to_database(self, camera_id: int, class_name_id: int, filename: str):
-        """
-        Save a detection record to the database.
-
-        :param camera_id: The camera ID.
-        :param class_name_id: The class name ID.
-        :param filename: The filename of the saved image.
-        """
         Image.objects.create(
             camera_id=camera_id,
             class_name_id=class_name_id,
@@ -204,10 +122,8 @@ class CameraStreamViewer:
         )
         logging.info('Record saved in DB')
 
-    def release(self):
-        """
-        Release the camera resource.
-        """
-        self.stop_event.set()  # Set the stop event to stop the frame reading thread
-        self.cap.release()
-        cv2.destroyAllWindows()
+    def stop(self):
+        self.stop_event.set()
+        if self.cap.isOpened():
+            self.cap.release()
+            logging.info(f'Stopped camera stream for IP: {self.camera_ip}')

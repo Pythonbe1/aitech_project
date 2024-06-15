@@ -11,6 +11,7 @@ from safety_detection.models import Camera
 
 logging.basicConfig(level=logging.INFO)
 
+
 class Command(BaseCommand):
     help = 'Run a simple daemon'
 

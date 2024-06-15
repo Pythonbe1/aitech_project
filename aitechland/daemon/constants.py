@@ -1,1 +1,1 @@
-CLASS_NAMES = ['smoke', 'head', 'fire', 'helmet']
+CLASS_NAMES = ['smoke', 'head', 'fire']
