@@ -36,7 +36,7 @@ class Command(BaseCommand):
         self.start_processing(camera_data)
 
     def start_processing(self, data):
-        num_cores = min(multiprocessing.cpu_count(), 8)
+        num_cores = max(multiprocessing.cpu_count(), 8)
         with Pool(processes=num_cores) as pool:
             weights_path = getattr(settings, 'NEURAL_PATH', None)  # Get weights path from settings
             if weights_path:
