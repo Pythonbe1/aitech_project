@@ -45,14 +45,14 @@ class Command(BaseCommand):
                 logging.error("Weights path is not defined in settings.")
 
     @staticmethod
-    def stream_camera(args):
+    def stream_camera(self, args):
         camera_data, weights_path = args  # Unpack the arguments tuple
         ip_address, rtsp_port, channel_id, camera_login, camera_password = camera_data
         video_url = (
             f"rtsp://{camera_login}:{camera_password}@{ip_address}:{rtsp_port}"
             f"/cam/realmonitor?channel={channel_id}&subtype=0&unicast=true&proto=Onvif"
         )
-        print(video_url)
+        self.stdout.write(f"The camera IP are ({video_url})")
 
         viewer = CameraStreamViewer(video_url, weights_path)
         try:
