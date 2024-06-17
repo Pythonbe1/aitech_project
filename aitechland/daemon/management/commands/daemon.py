@@ -52,6 +52,7 @@ class Command(BaseCommand):
             f"rtsp://{camera_login}:{camera_password}@{ip_address}:{rtsp_port}"
             f"/cam/realmonitor?channel={channel_id}&subtype=0&unicast=true&proto=Onvif"
         )
+        print(video_url)
 
         viewer = CameraStreamViewer(video_url, weights_path)
         try:
