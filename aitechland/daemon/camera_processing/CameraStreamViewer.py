@@ -16,7 +16,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 class CameraStreamViewer:
-    def __init__(self, url: str, weights_path: str, frame_rate: int = 30, save_path: str = None):
+    def __init__(self, url: str, weights_path: str, frame_rate: int = 1, save_path: str = None):
         self.url = url
         self.weights_path = weights_path
         self.frame_rate = frame_rate
@@ -26,7 +26,7 @@ class CameraStreamViewer:
         self.last_detection_time = {}
         self.last_state_update_time = datetime.now()
         self.last_error_time = None
-        self.frame_queue = queue.Queue(maxsize=250)
+        self.frame_queue = queue.Queue(maxsize=125)
         self.stop_event = threading.Event()
         self.dropped_frames_count = 0
 
