@@ -26,7 +26,7 @@ class CameraStreamViewer:
         self.last_detection_time = {}
         self.last_state_update_time = datetime.now()
         self.last_error_time = None
-        self.frame_queue = queue.Queue(maxsize=125)
+        self.frame_queue = queue.Queue(maxsize=250)
         self.stop_event = threading.Event()
         self.dropped_frames_count = 0
 
@@ -78,7 +78,7 @@ class CameraStreamViewer:
 
         while not self.stop_event.is_set():
             try:
-                frame = self.frame_queue.get(timeout=2)
+                frame = self.frame_queue.get(timeout=4)
                 if frame is not None:
                     self.update_camera_state('Online')
                     self._process_frame(frame, model)
