@@ -100,7 +100,7 @@ class CameraStreamViewer:
 
     def _process_frame(self, frame, model):
         resized_frame = cv2.resize(frame, (640, 640), interpolation=cv2.INTER_LINEAR)
-        results = model.predict(resized_frame, conf=0.60, verbose=False)
+        results = model.track(resized_frame, conf=0.60, verbose=False)
         class_counts = Calculation.count_classes(results[0].names, results[0].boxes.cls.int().tolist())
 
         if any(class_name in class_counts for class_name in CLASS_NAMES):
