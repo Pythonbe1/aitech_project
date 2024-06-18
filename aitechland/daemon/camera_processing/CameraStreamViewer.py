@@ -3,7 +3,6 @@ import time
 import cv2
 import torch
 import threading
-import queue
 from ultralytics import YOLO
 from daemon.calculation.Calculation import Calculation
 from safety_detection.models import CameraState, Image, Camera, DetectionClasses
@@ -16,17 +15,16 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 class CameraStreamViewer:
-    def __init__(self, url: str, weights_path: str, frame_rate: int = 1, save_path: str = None):
-        self.url = url
+    def __init__(self, video_url: str, weights_path: str, frame_rate: int = 1, save_path: str = None):
+        self.video_url = video_url  # Store the video URL
         self.weights_path = weights_path
         self.frame_rate = frame_rate
         self.save_path = save_path or settings.MEDIA_ROOT
-        self.cap = cv2.VideoCapture(url)
+        self.cap = cv2.VideoCapture(video_url)
         self.camera_ip = self._extract_camera_ip()
         self.last_detection_time = {}
         self.last_state_update_time = datetime.now()
         self.last_error_time = None
-        self.frame_queue = queue.Queue(maxsize=250)
         self.stop_event = threading.Event()
         self.dropped_frames_count = 0
         self.reconnect_delay = 60  # Delay for reconnection in seconds
@@ -37,13 +35,17 @@ class CameraStreamViewer:
         else:
             self.update_camera_state('Offline')
 
-        threading.Thread(target=self._log_dropped_frames, daemon=True).start()
-        threading.Thread(target=self._read_frames, daemon=True).start()
-        threading.Thread(target=self._process_frames, daemon=True).start()
+        threading.Thread(target=self._read_and_process_frames, daemon=True).start()
         threading.Thread(target=self._reconnect_camera, daemon=True).start()
 
     def _extract_camera_ip(self) -> str:
-        return self.url.split('@')[1].split(':')[0]
+        return self.video_url.split('@')[1].split(':')[0]
+
+    def update_video_url(self, video_url: str):
+        self.video_url = video_url
+        self.cap = cv2.VideoCapture(video_url)
+        self.camera_ip = self._extract_camera_ip()
+        logging.info(f"Updated video URL to: {self.video_url}")
 
     def update_camera_state(self, state: str):
         current_time = datetime.now()
@@ -62,57 +64,44 @@ class CameraStreamViewer:
         while not self.stop_event.is_set():
             time.sleep(1)
 
-    def _read_frames(self):
+    def _read_and_process_frames(self):
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        model = YOLO(self.weights_path).to(device)
+
+        last_frame_time = time.time()
+
         while not self.stop_event.is_set():
+            current_time = time.time()
             ret, frame = self.cap.read()
+
             if not ret:
                 self.update_camera_state('Offline')
                 logging.warning(f"Failed to read frame from camera: {self.camera_ip}")
                 self.last_error_time = datetime.now()
                 self._shutdown_and_reconnect()
                 continue
-            if not self.frame_queue.full():
-                self.frame_queue.put(frame)
-            else:
-                self.dropped_frames_count += 1
+
+            if current_time - last_frame_time < 1.0 / self.frame_rate:
+                # Drop frames if less than 1 second / frame_rate has passed
+                continue
+
+            last_frame_time = current_time
+
+            self.update_camera_state('Online')
+            self._process_frame(frame, model)
 
     def _shutdown_and_reconnect(self):
         self.cap.release()
         logging.info(f"Shutting down camera: {self.camera_ip} for {self.reconnect_delay} seconds.")
         time.sleep(self.reconnect_delay)
-        self.cap = cv2.VideoCapture(self.url)
+        self.cap = cv2.VideoCapture(self.video_url)
         if self.cap.isOpened():
             self.cap.set(cv2.CAP_PROP_FPS, self.frame_rate)
+            self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 10)  # Adjust buffer size if needed
             self.update_camera_state('Online')
         else:
             self.update_camera_state('Offline')
             logging.warning(f"Failed to reconnect to camera: {self.camera_ip}")
-
-    def _process_frames(self):
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-        model = YOLO(self.weights_path).to(device)
-
-        while not self.stop_event.is_set():
-            try:
-                frame = self.frame_queue.get(timeout=4)
-                if frame is not None:
-                    self.update_camera_state('Online')
-                    self._process_frame(frame, model)
-                else:
-                    self.update_camera_state('Offline')
-                    logging.warning(f"Failed to read frame from camera: {self.camera_ip}")
-                    self.last_error_time = datetime.now()
-            except queue.Empty:
-                logging.warning(f"No frames received from camera: {self.camera_ip}")
-                self.update_camera_state('Offline')
-                self.last_error_time = datetime.now()
-
-    def _log_dropped_frames(self):
-        while not self.stop_event.is_set():
-            time.sleep(60)
-            logging.info(
-                f"Dropped frames for camera {self.camera_ip} in the last 60 seconds: {self.dropped_frames_count}")
-            self.dropped_frames_count = 0
 
     def _process_frame(self, frame, model):
         resized_frame = cv2.resize(frame, (640, 640), interpolation=cv2.INTER_LINEAR)
@@ -183,7 +172,7 @@ class CameraStreamViewer:
             if self.last_error_time and current_time - self.last_error_time > timedelta(seconds=self.reconnect_delay):
                 logging.info(f"Attempting to reconnect to camera: {self.camera_ip}")
                 self.cap.release()
-                self.cap = cv2.VideoCapture(self.url)
+                self.cap = cv2.VideoCapture(self.video_url)
                 if self.cap.isOpened():
                     self.cap.set(cv2.CAP_PROP_FPS, self.frame_rate)
                     self.update_camera_state('Online')
