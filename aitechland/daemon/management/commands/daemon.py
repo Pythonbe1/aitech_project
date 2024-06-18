@@ -1,6 +1,6 @@
-import logging
 import multiprocessing
 import time
+import logging
 from multiprocessing import Pool
 
 from django.conf import settings
@@ -58,3 +58,36 @@ class Command(BaseCommand):
             viewer.start()
         finally:
             viewer.release()
+
+    def handle_new_camera(self, camera_data):
+        ip_address, rtsp_port, channel_id, camera_login, camera_password = camera_data
+        video_url = (
+            f"rtsp://{camera_login}:{camera_password}@{ip_address}:{rtsp_port}"
+            f"/cam/realmonitor?channel={channel_id}&subtype=0&unicast=true&proto=Onvif"
+        )
+        logging.info(f"Handling new camera: {video_url}")
+
+        weights_path = getattr(settings, 'NEURAL_PATH', None)
+        if not weights_path:
+            logging.error("Weights path is not defined in settings.")
+            return
+
+        viewer = CameraStreamViewer(video_url, weights_path)
+        try:
+            viewer.start()
+        finally:
+            viewer.release()
+
+    def add_camera(self, camera_data):
+        ip_address, rtsp_port, channel_id, camera_login, camera_password = camera_data
+        logging.info(f"Adding new camera: {ip_address}")
+
+        # Assuming Camera.objects.create(...) or similar logic to add a new camera to the database
+        # After adding the camera, call handle_new_camera to start processing the new camera
+        self.handle_new_camera(camera_data)
+
+    def remove_camera(self, camera_ip):
+        logging.info(f"Removing camera: {camera_ip}")
+
+        # Assuming Camera.objects.filter(ip_address=camera_ip).delete() or similar logic to remove a camera
+        # Perform any cleanup tasks as needed
