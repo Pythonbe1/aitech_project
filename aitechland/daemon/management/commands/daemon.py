@@ -1,6 +1,6 @@
-import multiprocessing
 import time
 import logging
+import multiprocessing
 from multiprocessing import Pool
 
 from django.conf import settings
@@ -35,13 +35,14 @@ class Command(BaseCommand):
         self.start_processing(camera_data)
 
     def start_processing(self, data):
-        num_cores = max(multiprocessing.cpu_count(), 8)
+        num_cores = max(multiprocessing.cpu_count(), 8)  # Adjust as needed
+        weights_path = getattr(settings, 'NEURAL_PATH', None)
+        if not weights_path:
+            logging.error("Weights path is not defined in settings.")
+            return
+
         with Pool(processes=num_cores) as pool:
-            weights_path = getattr(settings, 'NEURAL_PATH', None)
-            if weights_path:
-                pool.map(self.stream_camera, [(camera_data, weights_path) for camera_data in data])
-            else:
-                logging.error("Weights path is not defined in settings.")
+            pool.map(self.stream_camera, [(camera_data, weights_path) for camera_data in data])
 
     @staticmethod
     def stream_camera(args):
@@ -51,7 +52,7 @@ class Command(BaseCommand):
             f"rtsp://{camera_login}:{camera_password}@{ip_address}:{rtsp_port}"
             f"/cam/realmonitor?channel={channel_id}&subtype=0&unicast=true&proto=Onvif"
         )
-        logging.info(f"The camera IP is ({video_url})")
+        logging.info(f"Processing camera: {video_url}")
 
         viewer = CameraStreamViewer(video_url, weights_path)
         try:
