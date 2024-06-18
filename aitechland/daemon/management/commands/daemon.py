@@ -11,7 +11,6 @@ from safety_detection.models import Camera
 
 logging.basicConfig(level=logging.INFO)
 
-
 class Command(BaseCommand):
     help = 'Run a simple daemon'
 
@@ -38,7 +37,7 @@ class Command(BaseCommand):
     def start_processing(self, data):
         num_cores = max(multiprocessing.cpu_count(), 8)
         with Pool(processes=num_cores) as pool:
-            weights_path = getattr(settings, 'NEURAL_PATH', None)  # Get weights path from settings
+            weights_path = getattr(settings, 'NEURAL_PATH', None)
             if weights_path:
                 pool.map(self.stream_camera, [(camera_data, weights_path) for camera_data in data])
             else:
@@ -46,7 +45,7 @@ class Command(BaseCommand):
 
     @staticmethod
     def stream_camera(args):
-        camera_data, weights_path = args  # Unpack the arguments tuple
+        camera_data, weights_path = args
         ip_address, rtsp_port, channel_id, camera_login, camera_password = camera_data
         video_url = (
             f"rtsp://{camera_login}:{camera_password}@{ip_address}:{rtsp_port}"

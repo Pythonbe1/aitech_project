@@ -26,18 +26,21 @@ class CameraStreamViewer:
         self.last_detection_time = {}
         self.last_state_update_time = datetime.now()
         self.last_error_time = None
-        self.frame_queue = queue.Queue(maxsize=125)
+        self.frame_queue = queue.Queue(maxsize=250)
         self.stop_event = threading.Event()
         self.dropped_frames_count = 0
+        self.reconnect_delay = 60  # Delay for reconnection in seconds
 
         if self.cap.isOpened():
             self.cap.set(cv2.CAP_PROP_FPS, self.frame_rate)
+            self.update_camera_state('Online')
         else:
             self.update_camera_state('Offline')
 
         threading.Thread(target=self._log_dropped_frames, daemon=True).start()
         threading.Thread(target=self._read_frames, daemon=True).start()
         threading.Thread(target=self._process_frames, daemon=True).start()
+        threading.Thread(target=self._reconnect_camera, daemon=True).start()
 
     def _extract_camera_ip(self) -> str:
         return self.url.split('@')[1].split(':')[0]
@@ -66,11 +69,24 @@ class CameraStreamViewer:
                 self.update_camera_state('Offline')
                 logging.warning(f"Failed to read frame from camera: {self.camera_ip}")
                 self.last_error_time = datetime.now()
+                self._shutdown_and_reconnect()
                 continue
             if not self.frame_queue.full():
                 self.frame_queue.put(frame)
             else:
                 self.dropped_frames_count += 1
+
+    def _shutdown_and_reconnect(self):
+        self.cap.release()
+        logging.info(f"Shutting down camera: {self.camera_ip} for {self.reconnect_delay} seconds.")
+        time.sleep(self.reconnect_delay)
+        self.cap = cv2.VideoCapture(self.url)
+        if self.cap.isOpened():
+            self.cap.set(cv2.CAP_PROP_FPS, self.frame_rate)
+            self.update_camera_state('Online')
+        else:
+            self.update_camera_state('Offline')
+            logging.warning(f"Failed to reconnect to camera: {self.camera_ip}")
 
     def _process_frames(self):
         device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -146,14 +162,8 @@ class CameraStreamViewer:
         except DetectionClasses.DoesNotExist:
             logging.warning(f"Detection class {class_name} does not exist.")
         return None
-    def save_to_database(self, camera_id: int, class_name_id: int, filename: str):
-        """
-        Save a detection record to the database.
 
-        :param camera_id: The camera ID.
-        :param class_name_id: The class name ID.
-        :param filename: The filename of the saved image.
-        """
+    def save_to_database(self, camera_id: int, class_name_id: int, filename: str):
         Image.objects.create(
             camera_id=camera_id,
             class_name_id=class_name_id,
@@ -162,9 +172,22 @@ class CameraStreamViewer:
         logging.info('Record saved in DB')
 
     def release(self):
-        """
-        Release the camera resource.
-        """
-        self.stop_event.set()  # Set the stop event to stop the frame reading thread
+        self.stop_event.set()
         self.cap.release()
         cv2.destroyAllWindows()
+
+    def _reconnect_camera(self):
+        while not self.stop_event.is_set():
+            time.sleep(60)
+            current_time = datetime.now()
+            if self.last_error_time and current_time - self.last_error_time > timedelta(seconds=self.reconnect_delay):
+                logging.info(f"Attempting to reconnect to camera: {self.camera_ip}")
+                self.cap.release()
+                self.cap = cv2.VideoCapture(self.url)
+                if self.cap.isOpened():
+                    self.cap.set(cv2.CAP_PROP_FPS, self.frame_rate)
+                    self.update_camera_state('Online')
+                    self.last_error_time = None
+                else:
+                    self.update_camera_state('Offline')
+                    logging.warning(f"Failed to reconnect to camera: {self.camera_ip}")
