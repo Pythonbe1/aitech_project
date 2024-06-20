@@ -20,46 +20,10 @@
             padding: 0;
             overflow-x: hidden; /* Prevent horizontal scrollbars */
         }
-        
-        .modal {
-    display: none;
-    position: fixed;
-    z-index: 1000; /* Ensure it's above other content */
-    padding-top: 50px; /* Center the modal vertically */
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0, 0, 0, 0.8); /* Semi-transparent background */
-}
 
-/* Modal content */
-.modal-content {
-    margin: auto;
-    display: block;
-    width: 80%; /* Adjust the width as needed */
-    max-width: 800px; /* Limit maximum width */
-    max-height: 80%; /* Limit maximum height */
-}
+        /* Modal content */
 
-/* Close button */
-.close {
-    position: absolute;
-    top: 10px;
-    right: 25px;
-    color: #ffffff;
-    font-size: 35px;
-    font-weight: bold;
-    transition: 0.3s;
-}
-
-.close:hover,
-.close:focus {
-    color: #aaaaaa;
-    text-decoration: none;
-    cursor: pointer;
-}
+        /* Close button */
 
         .menu-bar {
             background-color: #333;
@@ -90,38 +54,9 @@
     position: relative;
 }
 
-.export-container {
-    padding: 10px;
-    background-color: #f2f2f2;
-    border-radius: 8px;
-}
-
-.export-btn {
-    color: #007bff;
-    text-decoration: none;
-    padding: 8px 16px;
-    border-radius: 5px;
-    border: 1px solid #007bff;
-    transition: background-color 0.3s;
-}
-
-.export-btn:hover {
-    background-color: #007bff;
-    color: #fff;
-}
-
-        .logout-btn {
-            text-align: right;
-        }
-
         .logout-btn a {
             text-decoration: none;
             color: #007bff;
-        }
-
-        .camera-stream {
-            border-radius: 8px;
-            overflow: hidden;
         }
 
         .camera-stream img {
@@ -157,96 +92,7 @@
             border-radius: 5px;
         }
 
-        /* Filter Button */
-        .filter-btn-container {
-            position: fixed;
-            top: 40px; /* Adjust the value to move it down by 10px */
-            left: 20px;
-            z-index: 1001; /* Ensure it's above other content */
-            transition: left 0.3s ease-in-out;
-        }
 
-        .filter-btn {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 10px 20px;
-            cursor: pointer;
-            position: relative;
-            z-index: 1002; /* Ensure it's above the sidebar */
-        }
-
-        /* Filter Sidebar */
-        .filter-sidebar {
-            position: fixed;
-            top: 0;
-            left: -220px; /* Move it off-screen initially */
-            width: 220px;
-            height: 100%;
-            background-color: #fff;
-            border-radius: 0 8px 8px 0;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-            z-index: 1000; /* Ensure it's above other content */
-            transition: left 0.3s ease-in-out;
-        }
-
-        /* Show Sidebar */
-        .sidebar-open {
-            left: 0;
-        }
-
-        /* Filter Popup */
-        .filter-popup {
-            display: none;
-        }
-
-        /* Adjusting Filter Button Text Position */
-        .filter-btn::after {
-            content: "Filter";
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-
-        .sidebar-heading {
-            margin-bottom: 70px; /* Adjust this value as needed */
-        }
-
-        /* Adjust the width of the filter dropdowns */
-        #cameraIP, #detectionClass, #fromDate, #toDate {
-            width: calc(100% - 40px); /* Set the width to 100% of the parent container minus padding */
-            padding: 10px; /* Add padding */
-            box-sizing: border-box; /* Ensure padding is included in width calculation */
-        }
-
-        /* Style for the Apply button */
-        #applyButton {
-            background-color: #007bff; /* Match the filter button color */
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 8px 16px;
-            cursor: pointer;
-            margin-top: 10px;
-            margin-right: 20px; /* Add margin to separate from the filter button */
-            float: right; /* Float to the left side */
-        }
-        
-        .camera-stream-container {
-            display: flex;
-            align-items: center; /* Align items vertically */
-        }
-
-        /* Style for the streaming video */
-        .camera-stream {
-            border-radius: 8px;
-            overflow: hidden;
-            flex: 0 0 auto; /* Allow shrinking and growing, but don't let it grow beyond its initial size */
-            margin-right: 10px; /* Add margin to separate from the JSON data container */
-        }
 
         .camera-stream img {
             display: block;
@@ -255,9 +101,6 @@
         }
 
         /* Style for the JSON data container */
-        .alarm-data {
-            flex: 1; /* Allow the JSON data container to grow and fill the remaining space */
-        }
     </style>
 
 <style>
@@ -292,37 +135,7 @@
         .data-table tbody tr:hover {
             background-color: #ddd;
         }
-       /* Close button */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000; /* Ensure it's above other content */
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.8); /* Semi-transparent background */
-            overflow: auto;
-        }
-        
-        /* Close button */
-        .close {
-            position: absolute;
-            top: 50%;
-            right: 10px;
-            color: #ffffff;
-            font-size: 35px;
-            font-weight: bold;
-            transition: 0.3s;
-            transform: translateY(-50%); /* Vertically center the close button */
-            cursor: pointer;
-            z-index: 1001; /* Ensure it's above the image */
-        }
-        
-        /* Close button hover effect */
-        .close:hover {
-            color: #aaaaaa;
-        }
+
     </style>
 </head>
 <body>
@@ -334,7 +147,7 @@
         <a href="{% url 'safety_detection:alarm_index' %}">Alarm</a>
 {#        <a href="{% url 'safety_detection:processed_index' %}">Processed</a>#}
         <a href="{% url 'safety_detection:monitoring_index' %}">Monitoring</a>
-        <a href="#">Analytics</a>
+        <a href="{% url 'safety_detection:analysis' %}">Analytics</a>
     </div>
     <div>
         <a href="{% url 'login' %}">Logout</a>

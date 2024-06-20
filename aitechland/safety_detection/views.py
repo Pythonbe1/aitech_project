@@ -1,11 +1,13 @@
 import ast
+import json
 from datetime import datetime
 from io import BytesIO
 
 import openpyxl
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.http import HttpResponse
 from django.http.response import JsonResponse
 from django.shortcuts import render
@@ -196,3 +198,46 @@ def monitoring_index(request):
     page_obj = paginator.get_page(page_number)
 
     return render(request, 'safety_detection/monitoring.html', {'page_obj': page_obj, 'camera_states': data})
+
+
+
+def analysis(request):
+    # Detection Statistics
+    detection_counts = list(Image.objects.values('class_name__name').annotate(count=Count('class_name__name')))
+
+    # Camera Overview with Alert Counts
+    cameras = Camera.objects.all()
+
+    # Initialize a list to store data for each camera
+    chart_data = []
+
+    for camera in cameras:
+        # Filter images for the current camera
+        camera_images = Image.objects.filter(camera=camera)
+
+        # Count detections for each type
+        head_count = camera_images.filter(class_name__name='head').count()
+        fire_count = camera_images.filter(class_name__name='fire').count()
+        smoke_count = camera_images.filter(class_name__name='smoke').count()
+
+        # Format the area_name and ip_address
+        area_name_ip = f"{camera.area_name} ({camera.ip_address})"
+
+        # Prepare data for the chart
+        chart_data.append({
+            'area_name_ip': area_name_ip,
+            'head_count': head_count,
+            'fire_count': fire_count,
+            'smoke_count': smoke_count
+        })
+
+    # Serialize chart_data to JSON
+    chart_data_json = json.dumps(chart_data)
+
+    context = {
+        'detection_counts': detection_counts,
+        'chart_data_json': chart_data_json,  # Pass JSON string to template
+        'cameras': cameras,
+    }
+
+    return render(request, 'safety_detection/analysis.html', context)
