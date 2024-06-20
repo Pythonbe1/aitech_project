@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AI TechLand{% endblock %}</title>
+
+    <!-- Include necessary CSS and JavaScript -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* Your existing styles */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden; /* Prevent horizontal scrollbars */
+        }
+
+        .menu-bar {
+            background-color: #333;
+            color: white;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative; /* Ensure the menu bar stays above other content */
+            z-index: 1003; /* Ensure the menu bar is above the filter sidebar */
+        }
+
+        .menu-bar a {
+            color: white;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+
+        .logout-btn {
+            text-align: right;
+        }
+
+        .logout-btn a {
+            text-decoration: none;
+            color: white;
+        }
+
+        .chart-container {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+
+        .chart {
+            width: 45%;
+            text-align: center;
+        }
+    </style>
+
+</head>
+<body>
+<!-- Menu bar -->
+<div class="menu-bar">
+    <div>
+        <a class="navbar-brand" href="#">AI TechLand</a>
+        <a href="{% url 'safety_detection:alarm_index' %}">Alarm</a>
+        <a href="{% url 'safety_detection:monitoring_index' %}">Monitoring</a>
+        <a href="{% url 'safety_detection:analysis' %}">Analytics</a>
+    </div>
+    <div class="logout-btn">
+        <a href="{% url 'login' %}">Logout</a>
+    </div>
+</div>
+
+<!-- Main container for the content -->
+<div class="chart-container">
+    <!-- Bar Chart -->
+    <div class="chart">
+        <canvas id="barChart"></canvas>
+    </div>
+    <!-- Pie Chart -->
+    <div class="chart">
+        <canvas id="pieChart"></canvas>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var chartData = JSON.parse('{{ chart_data_json|escapejs }}');
+
+        var labels = chartData.map(function (item) {
+            return item.area_name_ip;
+        });
+
+        var headCounts = chartData.map(function (item) {
+            return item.head_count;
+        });
+
+        var fireCounts = chartData.map(function (item) {
+            return item.fire_count;
+        });
+
+        var smokeCounts = chartData.map(function (item) {
+            return item.smoke_count;
+        });
+
+        // Bar Chart
+        var barCtx = document.getElementById('barChart').getContext('2d');
+        var barChart = new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Alert HEAD',
+                        backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1,
+                        data: headCounts
+                    },
+                    {
+                        label: 'Alert FIRE',
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1,
+                        data: fireCounts
+                    },
+                    {
+                        label: 'Alert SMOKE',
+                        backgroundColor: 'rgba(255, 206, 86, 0.5)',
+                        borderColor: 'rgba(255, 206, 86, 1)',
+                        borderWidth: 1,
+                        data: smokeCounts
+                    }
+                ]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Pie Chart
+        var totalHeadCount = headCounts.reduce(function (a, b) { return a + b; }, 0);
+        var totalFireCount = fireCounts.reduce(function (a, b) { return a + b; }, 0);
+        var totalSmokeCount = smokeCounts.reduce(function (a, b) { return a + b; }, 0);
+
+        var pieCtx = document.getElementById('pieChart').getContext('2d');
+        var pieChart = new Chart(pieCtx, {
+            type: 'pie',
+            data: {
+                labels: ['Head', 'Fire', 'Smoke'],
+                datasets: [{
+                    label: 'Alerts Distribution',
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.5)',
+                        'rgba(54, 162, 235, 0.5)',
+                        'rgba(255, 206, 86, 0.5)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)'
+                    ],
+                    borderWidth: 1,
+                    data: [totalHeadCount, totalFireCount, totalSmokeCount]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(tooltipItem) {
+                                var dataset = tooltipItem.dataset;
+                                var total = dataset.data.reduce(function(acc, value) {
+                                    return acc + value;
+                                }, 0);
+                                var currentValue = dataset.data[tooltipItem.dataIndex];
+                                var percentage = Math.floor(((currentValue / total) * 100) + 0.5);
+                                return dataset.label + ': ' + percentage + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+
+</body>
+</html>
