@@ -1,5 +1,8 @@
-from django.db import models
+import cv2
 from django.contrib.auth.models import User as AuthUser
+from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 
 class DetectionClasses(models.Model):
@@ -39,17 +42,32 @@ class Camera(models.Model):
 
     class Meta:
         db_table = 'camera'
-        managed = False
+        managed = True
+
+
+class ROICoordinates(models.Model):
+    camera = models.ForeignKey('Camera', related_name='rois', on_delete=models.CASCADE)
+    roi_data = models.JSONField()
+
+    def __str__(self):
+        return f'ROIs for {self.camera}'
+
+    def save_roi_data(self, roi_data):
+        self.roi_data = roi_data
+        self.save()
+
+    class Meta:
+        db_table = 'roi_coordinates'
+        managed = True
 
 
 class Permission(models.Model):
     user = models.ForeignKey(AuthUser, on_delete=models.CASCADE)
     camera = models.ForeignKey(Camera, on_delete=models.CASCADE)
 
-    # Add any additional permission information here, like roles
     class Meta:
         db_table = 'permission'
-        managed = False
+        managed = True
 
     def __str__(self):
         return f'{self.user} {self.camera}'
@@ -80,3 +98,25 @@ class CameraState(models.Model):
     class Meta:
         db_table = 'camera_state'
         managed = True
+
+
+@receiver(post_save, sender=ROICoordinates)
+def capture_frame(sender, instance, **kwargs):
+    camera = instance.camera
+    credential = camera.credential_for_ip
+    video_url = (
+        f"rtsp://{credential.camera_login}:{credential.camera_password}@{camera.ip_address}:{camera.rtsp_port}"
+        f"/cam/realmonitor?channel={camera.channel_id}&subtype=0&unicast=true&proto=Onvif"
+    )
+
+    cap = cv2.VideoCapture(video_url)
+    ret, frame = cap.read()
+
+    if ret:
+        frame_path = f'media/roi_frame_{instance.id}.jpg'
+        cv2.imwrite(frame_path, frame)
+        print(f"Frame captured and saved at {frame_path}")
+    else:
+        print("Failed to capture frame from camera.")
+
+    cap.release()
