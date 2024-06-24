@@ -3,6 +3,7 @@ from django.contrib.auth.models import User as AuthUser
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django import forms
 
 
 class DetectionClasses(models.Model):
@@ -46,11 +47,11 @@ class Camera(models.Model):
 
 
 class ROICoordinates(models.Model):
-    camera = models.ForeignKey('Camera', related_name='rois', on_delete=models.CASCADE)
-    roi_data = models.JSONField()
+    camera = models.ForeignKey(Camera, on_delete=models.CASCADE)
+    roi_data = models.TextField(default='[]')  # Store as a JSON string
 
     def __str__(self):
-        return f'ROIs for {self.camera}'
+        return f"{self.camera} ROI {self.roi_data}"
 
     def save_roi_data(self, roi_data):
         self.roi_data = roi_data
@@ -59,6 +60,14 @@ class ROICoordinates(models.Model):
     class Meta:
         db_table = 'roi_coordinates'
         managed = True
+
+
+class ROICoordinatesForm(forms.ModelForm):
+    roi_data = forms.CharField(widget=forms.HiddenInput(), required=False)
+
+    class Meta:
+        model = ROICoordinates
+        fields = ['camera', 'roi_data']
 
 
 class Permission(models.Model):

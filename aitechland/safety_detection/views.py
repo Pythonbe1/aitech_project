@@ -272,4 +272,21 @@ def get_camera_frame(request, camera_id):
         return HttpResponse(status=500)
 
 
+from django.shortcuts import redirect
 
+
+def save_rois(request):
+    if request.method == 'POST':
+        camera_id = request.POST.get('camera_id')
+        roi_coordinates = request.POST.get('roi_coordinates')
+
+        try:
+            camera = Camera.objects.get(id=camera_id)
+            rois_data = json.loads(roi_coordinates)
+            roi_instance = ROICoordinates(camera=camera, roi_data=rois_data)
+            roi_instance.save()
+            return redirect('some_view_name')  # Adjust the redirection as needed
+        except Camera.DoesNotExist:
+            return HttpResponseBadRequest("Invalid camera ID")
+    else:
+        return HttpResponseBadRequest("Invalid request method")
