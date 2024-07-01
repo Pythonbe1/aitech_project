@@ -1,0 +1,19 @@
+{% extends "admin/change_form.html" %}
+
+{#{% load static %}#}
+{##}
+{#{% block extrahead %}#}
+{#{{ block.super }}#}
+{#{% if canvas %}#}
+{#<script src="{% static 'safety_detection/roi_draw.js' %}"></script>#}
+{#{% endif %}#}
+{#{% endblock %}#}
+{##}
+{#{% block after_field_sets %}#}
+{#{{ block.super }}#}
+{#{% if canvas %}#}
+{#<div class="form-row">#}
+{#    <canvas id="roiCanvas" width="640" height="480" style="border: 1px solid #000;"></canvas>#}
+{#</div>#}
+{#{% endif %}#}
+{#{% endblock %}#}

@@ -3,15 +3,16 @@ import json
 from datetime import datetime
 from io import BytesIO
 
+import cv2
 import openpyxl
 from django.conf import settings
-from django.contrib.auth.models import User
 from django.core.paginator import Paginator
 from django.db.models import Q, Count
 from django.http import HttpResponse
-from django.http.response import JsonResponse
-from django.shortcuts import render
-from safety_detection.models import Permission, Image, CameraState, Camera
+from django.http.response import JsonResponse, HttpResponseBadRequest
+from django.shortcuts import render, get_object_or_404
+
+from safety_detection.models import Permission, Image, CameraState, Camera, ROICoordinates
 
 
 def get_camera_info(user):
@@ -200,7 +201,6 @@ def monitoring_index(request):
     return render(request, 'safety_detection/monitoring.html', {'page_obj': page_obj, 'camera_states': data})
 
 
-
 def analysis(request):
     # Detection Statistics
     detection_counts = list(Image.objects.values('class_name__name').annotate(count=Count('class_name__name')))
@@ -241,3 +241,52 @@ def analysis(request):
     }
 
     return render(request, 'safety_detection/analysis.html', context)
+
+
+def get_camera_frame(request, camera_id):
+    camera = get_object_or_404(Camera, id=camera_id)
+    credential = camera.credential_for_ip
+    video_url = (
+        f"rtsp://{credential.camera_login}:{credential.camera_password}@{camera.ip_address}:{camera.rtsp_port}"
+        f"/cam/realmonitor?channel={camera.channel_id}&subtype=0&unicast=true&proto=Onvif"
+    )
+
+    try:
+        cap = cv2.VideoCapture(video_url)
+        if not cap.isOpened():
+            raise IOError(f"Unable to open video stream from {video_url}")
+
+        ret, frame = cap.read()
+
+        if ret:
+            _, jpeg = cv2.imencode('.jpg', frame)
+            cap.release()
+            return HttpResponse(jpeg.tobytes(), content_type='image/jpeg')
+        else:
+            cap.release()
+            return HttpResponse(status=500)
+
+    except Exception as e:
+        # Log the error for debugging purposes
+        print(f"Error fetching camera frame: {str(e)}")
+        return HttpResponse(status=500)
+
+
+from django.shortcuts import redirect
+
+
+def save_rois(request):
+    if request.method == 'POST':
+        camera_id = request.POST.get('camera_id')
+        roi_coordinates = request.POST.get('roi_coordinates')
+
+        try:
+            camera = Camera.objects.get(id=camera_id)
+            rois_data = json.loads(roi_coordinates)
+            roi_instance = ROICoordinates(camera=camera, roi_data=rois_data)
+            roi_instance.save()
+            return redirect('some_view_name')  # Adjust the redirection as needed
+        except Camera.DoesNotExist:
+            return HttpResponseBadRequest("Invalid camera ID")
+    else:
+        return HttpResponseBadRequest("Invalid request method")
