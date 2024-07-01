@@ -37,6 +37,7 @@ class Camera(models.Model):
     rtsp_port = models.IntegerField()
     channel_id = models.IntegerField()
     credential_for_ip = models.ForeignKey(CameraCredential, on_delete=models.CASCADE)
+    is_run_daemon = models.BooleanField(default=False)  # Add this line
 
     def __str__(self):
         return f'{self.area_name} {self.ip_address}'
