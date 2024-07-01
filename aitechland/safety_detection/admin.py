@@ -21,7 +21,7 @@ class ROICoordinatesInline(admin.TabularInline):
 
 @admin.register(Camera)
 class CameraAdmin(admin.ModelAdmin):
-    list_display = ['area_name', 'ip_address', 'rtsp_port', 'channel_id', 'credential_for_ip']
+    list_display = ['area_name', 'ip_address', 'rtsp_port', 'channel_id', 'credential_for_ip', 'is_run_daemon']
     filter_horizontal = ('detect_names',)
     inlines = [ROICoordinatesInline]
 
